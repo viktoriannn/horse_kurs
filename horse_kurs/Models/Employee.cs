@@ -27,8 +27,6 @@ public partial class Employee
 
     public string? Phone { get; set; }
 
-    public DateOnly HireDate { get; set; }
-
     public virtual ICollection<Coach> Coaches { get; set; } = new List<Coach>();
 
     public virtual ICollection<Stall> Stalls { get; set; } = new List<Stall>();

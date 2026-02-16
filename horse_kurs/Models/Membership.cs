@@ -11,8 +11,6 @@ public partial class Membership
 
     public int LessonsTotal { get; set; }
 
-    public int LessonsUsed { get; set; }
-
     public DateOnly ValidFrom { get; set; }
 
     public DateOnly ValidUntil { get; set; }
@@ -26,6 +24,8 @@ public partial class Membership
     public int IdClient { get; set; }
 
     public virtual Client IdClientNavigation { get; set; } = null!;
+
+    public virtual ICollection<MembershipLesson> MembershipLessons { get; set; } = new List<MembershipLesson>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }

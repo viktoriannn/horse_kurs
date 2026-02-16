@@ -11,8 +11,6 @@ public partial class Stall
 
     public string Type { get; set; } = null!;
 
-    public DateOnly LastCleaningDate { get; set; }
-
     public decimal Size { get; set; }
 
     public string Status { get; set; } = null!;

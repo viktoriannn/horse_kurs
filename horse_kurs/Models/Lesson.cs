@@ -11,27 +11,23 @@ public partial class Lesson
 
     public string Type { get; set; } = null!;
 
-    public TimeOnly StartTime { get; set; }
-
-    public TimeOnly EndTime { get; set; }
-
-    public string Status { get; set; } = null!;
-
-    public decimal Price { get; set; }
-
-    public string? PaymentType { get; set; }
-
-    public int? IdHorse { get; set; }
-
     public int IdClient { get; set; }
 
     public int IdCoach { get; set; }
+
+    public int? IdArena { get; set; }
+
+    public virtual Arena? IdArenaNavigation { get; set; }
 
     public virtual Client IdClientNavigation { get; set; } = null!;
 
     public virtual Coach IdCoachNavigation { get; set; } = null!;
 
-    public virtual Horse? IdHorseNavigation { get; set; }
+    public virtual ICollection<LessonHorse> LessonHorses { get; set; } = new List<LessonHorse>();
+
+    public virtual ICollection<MembershipLesson> MembershipLessons { get; set; } = new List<MembershipLesson>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+
+    public virtual ICollection<ScheduleArena> ScheduleArenas { get; set; } = new List<ScheduleArena>();
 }

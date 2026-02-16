@@ -4,20 +4,24 @@ using Microsoft.EntityFrameworkCore;
 
 namespace horse_kurs.Models;
 
-public partial class Equestrian_Club_Context : DbContext
+public partial class EquestrianClubContext : DbContext
 {
-    public Equestrian_Club_Context()
+    public EquestrianClubContext()
     {
     }
 
-    public Equestrian_Club_Context(DbContextOptions<Equestrian_Club_Context> options)
+    public EquestrianClubContext(DbContextOptions<EquestrianClubContext> options)
         : base(options)
     {
     }
 
+    public virtual DbSet<Arena> Arenas { get; set; }
+
     public virtual DbSet<Client> Clients { get; set; }
 
     public virtual DbSet<Coach> Coaches { get; set; }
+
+    public virtual DbSet<Competition> Competitions { get; set; }
 
     public virtual DbSet<Employee> Employees { get; set; }
 
@@ -25,9 +29,17 @@ public partial class Equestrian_Club_Context : DbContext
 
     public virtual DbSet<Lesson> Lessons { get; set; }
 
+    public virtual DbSet<LessonHorse> LessonHorses { get; set; }
+
     public virtual DbSet<Membership> Memberships { get; set; }
 
+    public virtual DbSet<MembershipLesson> MembershipLessons { get; set; }
+
+    public virtual DbSet<Participation> Participations { get; set; }
+
     public virtual DbSet<Payment> Payments { get; set; }
+
+    public virtual DbSet<ScheduleArena> ScheduleArenas { get; set; }
 
     public virtual DbSet<Stall> Stalls { get; set; }
 
@@ -37,9 +49,26 @@ public partial class Equestrian_Club_Context : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Arena>(entity =>
+        {
+            entity.HasKey(e => e.IdArena).HasName("PK__Arena__D120353F116F169D");
+
+            entity.ToTable("Arena");
+
+            entity.Property(e => e.IdArena).HasColumnName("ID_Arena");
+            entity.Property(e => e.Coverage).HasMaxLength(30);
+            entity.Property(e => e.Length).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.Name).HasMaxLength(50);
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue("Доступен");
+            entity.Property(e => e.Type).HasMaxLength(30);
+            entity.Property(e => e.Width).HasColumnType("decimal(5, 2)");
+        });
+
         modelBuilder.Entity<Client>(entity =>
         {
-            entity.HasKey(e => e.IdClient).HasName("PK__Client__B5AE4EC8EC8B80CC");
+            entity.HasKey(e => e.IdClient).HasName("PK__Client__B5AE4EC8092BAF53");
 
             entity.ToTable("Client");
 
@@ -72,21 +101,44 @@ public partial class Equestrian_Club_Context : DbContext
 
         modelBuilder.Entity<Coach>(entity =>
         {
-            entity.HasKey(e => e.IdCoach).HasName("PK__Coach__6D1B22C4030E56B0");
+            entity.HasKey(e => e.IdCoach).HasName("PK__Coach__6D1B22C4B2E492B3");
 
             entity.ToTable("Coach");
 
-
-
+            entity.Property(e => e.IdCoach).HasColumnName("ID_Coach");
+            entity.Property(e => e.IdEmployee).HasColumnName("ID_Employee");
+            entity.Property(e => e.Qualification).HasMaxLength(100);
+            entity.Property(e => e.Specialization).HasMaxLength(100);
 
             entity.HasOne(d => d.IdEmployeeNavigation).WithMany(p => p.Coaches)
                 .HasForeignKey(d => d.IdEmployee)
                 .HasConstraintName("FK_Coach_Employee");
         });
 
+        modelBuilder.Entity<Competition>(entity =>
+        {
+            entity.HasKey(e => e.IdCompetition).HasName("PK__Competit__0E2B371D020CE323");
+
+            entity.ToTable("Competition");
+
+            entity.Property(e => e.IdCompetition).HasColumnName("ID_Competition");
+            entity.Property(e => e.IdArena).HasColumnName("ID_Arena");
+            entity.Property(e => e.Level).HasMaxLength(30);
+            entity.Property(e => e.Name).HasMaxLength(50);
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue("Запланировано");
+            entity.Property(e => e.Type).HasMaxLength(30);
+
+            entity.HasOne(d => d.IdArenaNavigation).WithMany(p => p.Competitions)
+                .HasForeignKey(d => d.IdArena)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Competition_Arena");
+        });
+
         modelBuilder.Entity<Employee>(entity =>
         {
-            entity.HasKey(e => e.IdEmployee).HasName("PK__Employee__D9EE4F3695F155E5");
+            entity.HasKey(e => e.IdEmployee).HasName("PK__Employee__D9EE4F36F60984C0");
 
             entity.ToTable("Employee");
 
@@ -95,10 +147,7 @@ public partial class Equestrian_Club_Context : DbContext
             entity.Property(e => e.DateOfBirth).HasColumnName("Date_of_birth");
             entity.Property(e => e.FlatNumber)
                 .HasMaxLength(10)
-                .HasColumnName("Flat_number")
-
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnName("Hire_date");
+                .HasColumnName("Flat_number");
             entity.Property(e => e.HouseNumber)
                 .HasMaxLength(10)
                 .HasColumnName("House_number");
@@ -112,7 +161,7 @@ public partial class Equestrian_Club_Context : DbContext
 
         modelBuilder.Entity<Horse>(entity =>
         {
-            entity.HasKey(e => e.IdHorse).HasName("PK__Horse__1F05AB7C068B920B");
+            entity.HasKey(e => e.IdHorse).HasName("PK__Horse__1F05AB7CD385EE49");
 
             entity.ToTable("Horse");
 
@@ -144,16 +193,19 @@ public partial class Equestrian_Club_Context : DbContext
 
         modelBuilder.Entity<Lesson>(entity =>
         {
-            entity.HasKey(e => e.IdLesson).HasName("PK__Lesson__67381F3B3ECAF7EE");
+            entity.HasKey(e => e.IdLesson).HasName("PK__Lesson__67381F3BE8AF0538");
 
             entity.ToTable("Lesson");
 
             entity.Property(e => e.IdLesson).HasColumnName("ID_Lesson");
+            entity.Property(e => e.IdArena).HasColumnName("ID_Arena");
             entity.Property(e => e.IdClient).HasColumnName("ID_Client");
-            entity.Property(e => e.IdCoach).HasColumnName("ID_Coach")
-                .HasMaxLength(20)
-                .HasDefaultValue("Запланировано");
-            entity.Property(e => e.Type).HasMaxLength(20);
+            entity.Property(e => e.IdCoach).HasColumnName("ID_Coach");
+            entity.Property(e => e.Type).HasMaxLength(30);
+
+            entity.HasOne(d => d.IdArenaNavigation).WithMany(p => p.Lessons)
+                .HasForeignKey(d => d.IdArena)
+                .HasConstraintName("FK_Lesson_Arena");
 
             entity.HasOne(d => d.IdClientNavigation).WithMany(p => p.Lessons)
                 .HasForeignKey(d => d.IdClient)
@@ -166,9 +218,30 @@ public partial class Equestrian_Club_Context : DbContext
                 .HasConstraintName("FK_Lesson_Coach");
         });
 
+        modelBuilder.Entity<LessonHorse>(entity =>
+        {
+            entity.HasKey(e => e.IdLessonHorse).HasName("PK__Lesson_H__B12E82A70E548177");
+
+            entity.ToTable("Lesson_Horse");
+
+            entity.Property(e => e.IdLessonHorse).HasColumnName("ID_Lesson_Horse");
+            entity.Property(e => e.IdHorse).HasColumnName("ID_Horse");
+            entity.Property(e => e.IdLesson).HasColumnName("ID_Lesson");
+
+            entity.HasOne(d => d.IdHorseNavigation).WithMany(p => p.LessonHorses)
+                .HasForeignKey(d => d.IdHorse)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LessonHorse_Horse");
+
+            entity.HasOne(d => d.IdLessonNavigation).WithMany(p => p.LessonHorses)
+                .HasForeignKey(d => d.IdLesson)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LessonHorse_Lesson");
+        });
+
         modelBuilder.Entity<Membership>(entity =>
         {
-            entity.HasKey(e => e.IdMembership).HasName("PK__Membersh__49C2410B365DE3F0");
+            entity.HasKey(e => e.IdMembership).HasName("PK__Membersh__49C2410B360EE594");
 
             entity.ToTable("Membership");
 
@@ -194,13 +267,71 @@ public partial class Equestrian_Club_Context : DbContext
                 .HasConstraintName("FK_Membership_Client");
         });
 
+        modelBuilder.Entity<MembershipLesson>(entity =>
+        {
+            entity.HasKey(e => e.IdMembershipLesson).HasName("PK__Membersh__47838CC859C675E3");
+
+            entity.ToTable("Membership_Lesson");
+
+            entity.Property(e => e.IdMembershipLesson).HasColumnName("ID_Membership_Lesson");
+            entity.Property(e => e.IdLesson).HasColumnName("ID_Lesson");
+            entity.Property(e => e.IdMembership).HasColumnName("ID_Membership");
+            entity.Property(e => e.Price).HasColumnType("decimal(10, 2)");
+
+            entity.HasOne(d => d.IdLessonNavigation).WithMany(p => p.MembershipLessons)
+                .HasForeignKey(d => d.IdLesson)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MembershipLesson_Lesson");
+
+            entity.HasOne(d => d.IdMembershipNavigation).WithMany(p => p.MembershipLessons)
+                .HasForeignKey(d => d.IdMembership)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MembershipLesson_Membership");
+        });
+
+        modelBuilder.Entity<Participation>(entity =>
+        {
+            entity.HasKey(e => e.IdParticipation).HasName("PK__Particip__1A686438E5E30A85");
+
+            entity.ToTable("Participation");
+
+            entity.HasIndex(e => new { e.IdCompetition, e.StartNumber }, "UQ_Participation_StartNumber").IsUnique();
+
+            entity.Property(e => e.IdParticipation).HasColumnName("ID_Participation");
+            entity.Property(e => e.IdClient).HasColumnName("ID_Client");
+            entity.Property(e => e.IdCompetition).HasColumnName("ID_Competition");
+            entity.Property(e => e.IdHorse).HasColumnName("ID_Horse");
+            entity.Property(e => e.RegistrationDate)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnName("Registration_date");
+            entity.Property(e => e.ResultPlace).HasColumnName("Result_place");
+            entity.Property(e => e.Score).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.StartNumber).HasColumnName("Start_number");
+
+            entity.HasOne(d => d.IdClientNavigation).WithMany(p => p.Participations)
+                .HasForeignKey(d => d.IdClient)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Participation_Client");
+
+            entity.HasOne(d => d.IdCompetitionNavigation).WithMany(p => p.Participations)
+                .HasForeignKey(d => d.IdCompetition)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Participation_Competition");
+
+            entity.HasOne(d => d.IdHorseNavigation).WithMany(p => p.Participations)
+                .HasForeignKey(d => d.IdHorse)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Participation_Horse");
+        });
+
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.IdPayment).HasName("PK__Payment__C2118ADEA7565AAC");
+            entity.HasKey(e => e.IdPayment).HasName("PK__Payment__C2118ADEDA806726");
 
             entity.ToTable("Payment");
 
             entity.Property(e => e.IdPayment).HasColumnName("ID_Payment");
+            entity.Property(e => e.IdCompetition).HasColumnName("ID_Competition");
             entity.Property(e => e.IdLesson).HasColumnName("ID_Lesson");
             entity.Property(e => e.IdMembership).HasColumnName("ID_Membership");
             entity.Property(e => e.MethodPaid)
@@ -209,13 +340,15 @@ public partial class Equestrian_Club_Context : DbContext
             entity.Property(e => e.PaymentDate)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
-                .HasColumnName("Payment_date")
-                .HasMaxLength(50)
-                .HasColumnName("Purpose_of_the_payment");
+                .HasColumnName("Payment_date");
             entity.Property(e => e.Status)
                 .HasMaxLength(20)
                 .HasDefaultValue("Завершено");
             entity.Property(e => e.Summa).HasColumnType("decimal(10, 2)");
+
+            entity.HasOne(d => d.IdCompetitionNavigation).WithMany(p => p.Payments)
+                .HasForeignKey(d => d.IdCompetition)
+                .HasConstraintName("FK_Payment_Competition");
 
             entity.HasOne(d => d.IdLessonNavigation).WithMany(p => p.Payments)
                 .HasForeignKey(d => d.IdLesson)
@@ -226,18 +359,46 @@ public partial class Equestrian_Club_Context : DbContext
                 .HasConstraintName("FK_Payment_Membership");
         });
 
+        modelBuilder.Entity<ScheduleArena>(entity =>
+        {
+            entity.HasKey(e => e.IdSchedule).HasName("PK__Schedule__73616218C0A1A969");
+
+            entity.ToTable("Schedule_Arena");
+
+            entity.Property(e => e.IdSchedule).HasColumnName("ID_Schedule");
+            entity.Property(e => e.EndTime).HasColumnName("End_time");
+            entity.Property(e => e.IdArena).HasColumnName("ID_Arena");
+            entity.Property(e => e.IdCompetition).HasColumnName("ID_Competition");
+            entity.Property(e => e.IdLesson).HasColumnName("ID_Lesson");
+            entity.Property(e => e.StartTime).HasColumnName("Start_time");
+            entity.Property(e => e.Status)
+                .HasMaxLength(20)
+                .HasDefaultValue("Запланировано");
+
+            entity.HasOne(d => d.IdArenaNavigation).WithMany(p => p.ScheduleArenas)
+                .HasForeignKey(d => d.IdArena)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Schedule_Arena");
+
+            entity.HasOne(d => d.IdCompetitionNavigation).WithMany(p => p.ScheduleArenas)
+                .HasForeignKey(d => d.IdCompetition)
+                .HasConstraintName("FK_Schedule_Competition");
+
+            entity.HasOne(d => d.IdLessonNavigation).WithMany(p => p.ScheduleArenas)
+                .HasForeignKey(d => d.IdLesson)
+                .HasConstraintName("FK_Schedule_Lesson");
+        });
+
         modelBuilder.Entity<Stall>(entity =>
         {
-            entity.HasKey(e => e.IdStall).HasName("PK__Stall__922B9F5FBB4B4B3C");
+            entity.HasKey(e => e.IdStall).HasName("PK__Stall__922B9F5F83530074");
 
             entity.ToTable("Stall");
 
             entity.HasIndex(e => e.Number, "UQ_Stall_Number").IsUnique();
 
             entity.Property(e => e.IdStall).HasColumnName("ID_Stall");
-            entity.Property(e => e.IdEmployee).HasColumnName("ID_Employee")
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnName("Last_cleaning_date");
+            entity.Property(e => e.IdEmployee).HasColumnName("ID_Employee");
             entity.Property(e => e.Number).HasMaxLength(10);
             entity.Property(e => e.Size).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.Status)

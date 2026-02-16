@@ -27,5 +27,7 @@ public partial class Horse
 
     public virtual Stall? IdStallNavigation { get; set; }
 
-    public virtual ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
+    public virtual ICollection<LessonHorse> LessonHorses { get; set; } = new List<LessonHorse>();
+
+    public virtual ICollection<Participation> Participations { get; set; } = new List<Participation>();
 }

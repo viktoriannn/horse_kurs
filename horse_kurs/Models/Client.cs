@@ -36,4 +36,6 @@ public partial class Client
     public virtual ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
 
     public virtual ICollection<Membership> Memberships { get; set; } = new List<Membership>();
+
+    public virtual ICollection<Participation> Participations { get; set; } = new List<Participation>();
 }
