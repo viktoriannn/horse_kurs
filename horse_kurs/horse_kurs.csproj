@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,6 +6,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="frontend\js\Новая папка1\**" />
+    <Compile Remove="frontend\js\Новая папка\**" />
+    <Content Remove="frontend\js\Новая папка1\**" />
+    <Content Remove="frontend\js\Новая папка\**" />
+    <EmbeddedResource Remove="frontend\js\Новая папка1\**" />
+    <EmbeddedResource Remove="frontend\js\Новая папка\**" />
+    <None Remove="frontend\js\Новая папка1\**" />
+    <None Remove="frontend\js\Новая папка\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
@@ -17,6 +28,13 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+	  <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+	  <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="frontend\image\" />
   </ItemGroup>
 
 </Project>

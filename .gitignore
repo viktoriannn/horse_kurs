@@ -361,3 +361,26 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+.vs/
+.vscode/
+
+bin/
+obj/
+packages/
+
+*.user
+*.suo
+*.userosscache
+
+appsettings.Development.json
+appsettings.Production.json
+# Visual Studio
+.vs/
+.vscode/
+
+# Build folders
+**/bin/
+**/obj/
+
+# User-specific files
+*.user
