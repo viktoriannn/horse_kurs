@@ -1,7 +1,6 @@
-﻿// ========== БАЗОВАЯ НАСТРОЙКА ==========
-const API_BASE = ''; // Пустой, так как API на том же сервере
+﻿
+const API_BASE = ''; 
 
-// ========== УНИВЕРСАЛЬНАЯ ФУНКЦИЯ ==========
 async function apiRequest(endpoint, method = 'GET', data = null) {
     const options = {
         method: method,
@@ -33,7 +32,6 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
     }
 }
 
-// ========== API ЛОШАДЕЙ ==========
 const HorsesAPI = {
     getAll: () => apiRequest('horses'),
     getById: (id) => apiRequest(`horses/${id}`),
@@ -47,7 +45,6 @@ const HorsesAPI = {
     updateHealth: (id, health) => apiRequest(`horses/${id}/health`, 'PUT', health)
 };
 
-// ========== API КЛИЕНТОВ ==========
 const ClientsAPI = {
     getAll: () => apiRequest('clients'),
     getById: (id) => apiRequest(`clients/${id}`),
@@ -58,7 +55,6 @@ const ClientsAPI = {
     updateBalance: (id, amount) => apiRequest(`clients/${id}/balance`, 'PUT', amount)
 };
 
-// ========== API ДЕННИКОВ ==========
 const StallsAPI = {
     getAll: () => apiRequest('stalls'),
     getById: (id) => apiRequest(`stalls/${id}`),
@@ -68,7 +64,6 @@ const StallsAPI = {
     assignHorse: (stallId, horseId) => apiRequest(`stalls/${stallId}/assign-horse/${horseId}`, 'PUT')
 };
 
-// ========== API ЗАНЯТИЙ ==========
 const LessonsAPI = {
     getAll: () => apiRequest('lessons'),
     getById: (id) => apiRequest(`lessons/${id}`),
@@ -78,7 +73,6 @@ const LessonsAPI = {
     create: (lesson) => apiRequest('lessons', 'POST', lesson)
 };
 
-// ========== API СОРЕВНОВАНИЙ ==========
 const CompetitionsAPI = {
     getAll: () => apiRequest('competitions'),
     getById: (id) => apiRequest(`competitions/${id}`),
@@ -88,7 +82,6 @@ const CompetitionsAPI = {
     updateStatus: (id, status) => apiRequest(`competitions/${id}/status`, 'PUT', status)
 };
 
-// ========== API УЧАСТИЙ ==========
 const ParticipationsAPI = {
     getAll: () => apiRequest('participations'),
     getByCompetition: (competitionId) => apiRequest(`participations/competition/${competitionId}`),
@@ -97,7 +90,6 @@ const ParticipationsAPI = {
     updateResult: (id, place, score) => apiRequest(`participations/${id}/result`, 'PUT', { place, score })
 };
 
-// ========== API ПЛАТЕЖЕЙ ==========
 const PaymentsAPI = {
     getAll: () => apiRequest('payments'),
     getByClient: (clientId) => apiRequest(`payments/client/${clientId}`),
@@ -107,7 +99,6 @@ const PaymentsAPI = {
     create: (payment) => apiRequest('payments', 'POST', payment)
 };
 
-// ========== API АБОНЕМЕНТОВ ==========
 const MembershipsAPI = {
     getAll: () => apiRequest('memberships'),
     getByClient: (clientId) => apiRequest(`memberships/client/${clientId}`),
@@ -117,7 +108,6 @@ const MembershipsAPI = {
     useLesson: (id) => apiRequest(`memberships/${id}/use-lesson`, 'PUT')
 };
 
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
 function formatDate(dateString) {
     if (!dateString) return '—';
     const date = new Date(dateString);
