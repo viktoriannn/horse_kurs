@@ -1,22 +1,66 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Конный клуб</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конно-спортивный клуб</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div style="padding:20px">
-        <div style="margin-bottom:20px">
-            <button onclick="showHome()">Главная</button>
-            <button onclick="showHorses()">Лошади</button>
-            <button onclick="showClients()">Клиенты</button>
-            <button onclick="showStalls()">Денники</button>
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-horse-head"></i>
+                <span>Конный клуб</span>
+            </div>
+            <nav class="nav">
+                <button class="nav-btn" onclick="showHome()">
+                    <i class="fas fa-home"></i>
+                    <span>Главная</span>
+                </button>
+                <button class="nav-btn" onclick="showHorses()">
+                    <i class="fas fa-horse"></i>
+                    <span>Лошади</span>
+                </button>
+                <button class="nav-btn" onclick="showClients()">
+                    <i class="fas fa-users"></i>
+                    <span>Клиенты</span>
+                </button>
+                <button class="nav-btn" onclick="showStalls()">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Денники</span>
+                </button>
+                <button class="nav-btn" id="authBtn" onclick="showAuth()">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Войти</span>
+                </button>
+                <button class="nav-btn" id="logoutBtn" style="display: none;" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Выйти</span>
+                </button>
+                <div id="userInfo" style="color: white; margin-left: 15px; font-weight: 500;"></div>
+            </nav>
         </div>
+    </header>
 
-        <div id="content">
-            <h1>Конный клуб</h1>
-            <p>Система управления</p>
+    <main class="main">
+        <div class="container">
+            <div id="content" class="content-card">
+                <div class="loader">
+                    <div class="spinner"></div>
+                    <p>Загрузка...</p>
+                </div>
+            </div>
         </div>
-    </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Конно-спортивный клуб. Все права защищены.</p>
+        </div>
+    </footer>
 
     <script src="js/app.js"></script>
 </body>

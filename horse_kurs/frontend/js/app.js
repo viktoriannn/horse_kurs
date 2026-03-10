@@ -1,188 +1,205 @@
-﻿function showHome() {
-    document.getElementById('content').innerHTML = `
-        <h1>Конный клуб</h1>
-        <p>Добро пожаловать!</p>
-        <button onclick="showHorses()">Лошади</button>
-        <button onclick="showClients()">Клиенты</button>
+﻿document.addEventListener('DOMContentLoaded', () => {
+    showHome();
+});
+
+function showHome() {
+    const content = document.getElementById('content');
+    content.innerHTML = `
+        <h1>Добро пожаловать в конно-спортивный клуб</h1>
+        <p style="font-size: 18px; color: #666; margin-bottom: 30px;">Система управления клубом</p>
+        
+        <div class="card-grid">
+            <div class="card" onclick="showHorses()">
+                <i class="fas fa-horse"></i>
+                <h3>Лошади</h3>
+                <p>Управление поголовьем</p>
+                <button class="btn btn-small">Перейти</button>
+            </div>
+            
+            <div class="card" onclick="showClients()">
+                <i class="fas fa-users"></i>
+                <h3>Клиенты</h3>
+                <p>Управление клиентами</p>
+                <button class="btn btn-small">Перейти</button>
+            </div>
+            
+            <div class="card" onclick="showStalls()">
+                <i class="fas fa-warehouse"></i>
+                <h3>Денники</h3>
+                <p>Управление денниками</p>
+                <button class="btn btn-small">Перейти</button>
+            </div>
+        </div>
     `;
 }
 
-// Показать список лошадей
 async function showHorses() {
     let html = '<h2>Лошади</h2>';
+    html += '<button class="btn" onclick="showAddHorse()">➕ Добавить лошадь</button>';
+    html += '<div id="horses-list">Загрузка...</div>';
+
+    document.getElementById('content').innerHTML = html;
 
     try {
-        // Получаем данные
         let response = await fetch('/api/horses');
         let horses = await response.json();
 
-        // Простая таблица
-        html += '<table border="1" style="width:100%">';
-        html += '<tr><th>Имя</th><th>Порода</th><th>Пол</th><th>Статус</th></tr>';
+        if (horses.length === 0) {
+            document.getElementById('horses-list').innerHTML = '<p>Нет данных</p>';
+        } else {
+            let table = '<table><tr><th>Имя</th><th>Порода</th><th>Пол</th><th>Статус</th><th>Здоровье</th></tr>';
 
-        for (let i = 0; i < horses.length; i++) {
-            html += '<tr>';
-            html += '<td>' + horses[i].name + '</td>';
-            html += '<td>' + horses[i].breed + '</td>';
-            html += '<td>' + horses[i].gender + '</td>';
-            html += '<td>' + horses[i].status + '</td>';
-            html += '</tr>';
+            for (let i = 0; i < horses.length; i++) {
+                let h = horses[i];
+                table += '<tr>';
+                table += '<td>' + (h.name || '—') + '</td>';
+                table += '<td>' + (h.breed || '—') + '</td>';
+                table += '<td>' + (h.gender || '—') + '</td>';
+                table += '<td>' + (h.status || '—') + '</td>';
+                table += '<td>' + (h.stateOfHealth || '—') + '</td>';
+                table += '</tr>';
+            }
+
+            table += '</table>';
+            document.getElementById('horses-list').innerHTML = table;
         }
-
-        html += '</table>';
-        html += '<br><button onclick="showAddHorse()">Добавить лошадь</button>';
-
     } catch (error) {
-        html += '<p>Ошибка загрузки</p>';
+        document.getElementById('horses-list').innerHTML = '<p style="color:red">Ошибка загрузки</p>';
     }
 
-    document.getElementById('content').innerHTML = html;
+    html += '<br><button class="btn btn-secondary" onclick="showHome()">На главную</button>';
 }
 
-// Форма добавления лошади
 function showAddHorse() {
     let html = `
         <h2>Добавить лошадь</h2>
-        <div>
-            <p>Имя: <input id="name"></p>
-            <p>Порода: <input id="breed"></p>
-            <p>Пол: 
-                <select id="gender">
+        <div style="max-width: 500px">
+            <div class="form-group">
+                <label>Имя:</label>
+                <input type="text" id="name" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Порода:</label>
+                <input type="text" id="breed" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Пол:</label>
+                <select id="gender" class="form-control">
                     <option>Жеребец</option>
                     <option>Кобыла</option>
+                    <option>Мерин</option>
                 </select>
-            </p>
-            <p>Дата рождения: <input id="date" type="date"></p>
-            <button onclick="saveHorse()">Сохранить</button>
-            <button onclick="showHorses()">Назад</button>
+            </div>
+            <div class="form-group">
+                <label>Дата рождения:</label>
+                <input type="date" id="dateOfBirth" class="form-control">
+            </div>
+            <button class="btn" onclick="saveHorse()">Сохранить</button>
+            <button class="btn btn-secondary" onclick="showHorses()">Отмена</button>
         </div>
     `;
     document.getElementById('content').innerHTML = html;
 }
 
-// Сохранить лошадь
 async function saveHorse() {
     let horse = {
         name: document.getElementById('name').value,
         breed: document.getElementById('breed').value,
         gender: document.getElementById('gender').value,
-        dateOfBirth: document.getElementById('date').value,
+        dateOfBirth: document.getElementById('dateOfBirth').value,
         status: 'В работе',
         stateOfHealth: 'Здорова',
         levelOfTraining: 'Начинающий',
         passport: 'пас_' + Date.now()
     };
 
-    await fetch('/api/horses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(horse)
-    });
+    try {
+        let response = await fetch('/api/horses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(horse)
+        });
 
-    alert('Лошадь добавлена!');
-    showHorses();
+        if (response.ok) {
+            alert('Лошадь добавлена!');
+            showHorses();
+        } else {
+            alert('Ошибка при сохранении');
+        }
+    } catch (error) {
+        alert('Ошибка: ' + error.message);
+    }
 }
 
-// Показать список клиентов
 async function showClients() {
     let html = '<h2>Клиенты</h2>';
+    html += '<div id="clients-list">Загрузка...</div>';
+
+    document.getElementById('content').innerHTML = html;
 
     try {
         let response = await fetch('/api/clients');
         let clients = await response.json();
 
-        html += '<table border="1" style="width:100%">';
-        html += '<tr><th>ФИО</th><th>Телефон</th><th>Уровень</th><th>Баланс</th></tr>';
+        if (clients.length === 0) {
+            document.getElementById('clients-list').innerHTML = '<p>Нет данных</p>';
+        } else {
+            let table = '<table><tr><th>ФИО</th><th>Телефон</th><th>Уровень</th><th>Баланс</th></tr>';
 
-        for (let i = 0; i < clients.length; i++) {
-            let c = clients[i];
-            html += '<tr>';
-            html += '<td>' + c.surname + ' ' + c.name + '</td>';
-            html += '<td>' + c.phone + '</td>';
-            html += '<td>' + c.levelOfTraining + '</td>';
-            html += '<td>' + c.balance + '</td>';
-            html += '</tr>';
+            for (let i = 0; i < clients.length; i++) {
+                let c = clients[i];
+                let name = (c.surname || '') + ' ' + (c.name || '');
+                table += '<tr>';
+                table += '<td>' + name + '</td>';
+                table += '<td>' + (c.phone || '—') + '</td>';
+                table += '<td>' + (c.levelOfTraining || '—') + '</td>';
+                table += '<td>' + (c.balance || 0) + ' ₽</td>';
+                table += '</tr>';
+            }
+
+            table += '</table>';
+            document.getElementById('clients-list').innerHTML = table;
         }
-
-        html += '</table>';
-        html += '<br><button onclick="showAddClient()">Добавить клиента</button>';
-
     } catch (error) {
-        html += '<p>Ошибка загрузки</p>';
+        document.getElementById('clients-list').innerHTML = '<p style="color:red">Ошибка загрузки</p>';
     }
 
-    document.getElementById('content').innerHTML = html;
+    html += '<br><button class="btn btn-secondary" onclick="showHome()">На главную</button>';
 }
 
-// Форма добавления клиента
-function showAddClient() {
-    let html = `
-        <h2>Добавить клиента</h2>
-        <div>
-            <p>Фамилия: <input id="surname"></p>
-            <p>Имя: <input id="name"></p>
-            <p>Телефон: <input id="phone"></p>
-            <p>Паспорт: <input id="passport"></p>
-            <p>Уровень: 
-                <select id="level">
-                    <option>Новичок</option>
-                    <option>Любитель</option>
-                </select>
-            </p>
-            <button onclick="saveClient()">Сохранить</button>
-            <button onclick="showClients()">Назад</button>
-        </div>
-    `;
-    document.getElementById('content').innerHTML = html;
-}
-
-// Сохранить клиента
-async function saveClient() {
-    let client = {
-        surname: document.getElementById('surname').value,
-        name: document.getElementById('name').value,
-        phone: document.getElementById('phone').value,
-        passport: document.getElementById('passport').value,
-        levelOfTraining: document.getElementById('level').value,
-        city: 'Москва',
-        street: 'Улица',
-        house: '1',
-        dateOfBirth: '2000-01-01',
-        balance: 0
-    };
-
-    await fetch('/api/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(client)
-    });
-
-    alert('Клиент добавлен!');
-    showClients();
-}
-
-// Показать денники
 async function showStalls() {
     let html = '<h2>Денники</h2>';
+    html += '<div id="stalls-list">Загрузка...</div>';
+
+    document.getElementById('content').innerHTML = html;
 
     try {
         let response = await fetch('/api/stalls');
         let stalls = await response.json();
 
-        for (let i = 0; i < stalls.length; i++) {
-            html += '<div style="border:1px solid black; margin:10px; padding:10px">';
-            html += '<h3>Денник ' + stalls[i].number + '</h3>';
-            html += '<p>Тип: ' + stalls[i].type + '</p>';
-            html += '<p>Статус: ' + stalls[i].status + '</p>';
-            html += '</div>';
-        }
+        if (stalls.length === 0) {
+            document.getElementById('stalls-list').innerHTML = '<p>Нет данных</p>';
+        } else {
+            let grid = '<div class="stall-grid">';
 
+            for (let i = 0; i < stalls.length; i++) {
+                let s = stalls[i];
+                grid += '<div class="stall-card">';
+                grid += '<div class="stall-header">Денник ' + (s.number || '—') + '</div>';
+                grid += '<div class="stall-body">';
+                grid += '<p><i class="fas fa-tag"></i> Тип: ' + (s.type || '—') + '</p>';
+                grid += '<p><i class="fas fa-ruler"></i> Размер: ' + (s.size || '—') + ' м²</p>';
+                grid += '<p><i class="fas fa-circle"></i> Статус: ' + (s.status || '—') + '</p>';
+                grid += '</div>';
+                grid += '</div>';
+            }
+
+            grid += '</div>';
+            document.getElementById('stalls-list').innerHTML = grid;
+        }
     } catch (error) {
-        html += '<p>Ошибка загрузки</p>';
+        document.getElementById('stalls-list').innerHTML = '<p style="color:red">Ошибка загрузки</p>';
     }
 
-    document.getElementById('content').innerHTML = html;
+    html += '<br><button class="btn btn-secondary" onclick="showHome()">На главную</button>';
 }
-
-// Показать главную при загрузке
-window.onload = showHome;
