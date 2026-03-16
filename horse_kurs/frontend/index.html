@@ -4,64 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Конно-спортивный клуб</title>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/api.js"></script>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header class="header">
-        <div class="container">
-            <div class="logo">
-                <i class="fas fa-horse-head"></i>
-                <span>Конный клуб</span>
-            </div>
-            <nav class="nav">
-                <button class="nav-btn" onclick="showHome()">
-                    <i class="fas fa-home"></i>
-                    <span>Главная</span>
-                </button>
-                <button class="nav-btn" onclick="showHorses()">
-                    <i class="fas fa-horse"></i>
-                    <span>Лошади</span>
-                </button>
-                <button class="nav-btn" onclick="showClients()">
-                    <i class="fas fa-users"></i>
-                    <span>Клиенты</span>
-                </button>
-                <button class="nav-btn" onclick="showStalls()">
-                    <i class="fas fa-warehouse"></i>
-                    <span>Денники</span>
-                </button>
-                <button class="nav-btn" id="authBtn" onclick="showAuth()">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span>Войти</span>
-                </button>
-                <button class="nav-btn" id="logoutBtn" style="display: none;" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Выйти</span>
-                </button>
-                <div id="userInfo" style="color: white; margin-left: 15px; font-weight: 500;"></div>
-            </nav>
-        </div>
-    </header>
-
-    <main class="main">
-        <div class="container">
-            <div id="content" class="content-card">
-                <div class="loader">
-                    <div class="spinner"></div>
-                    <p>Загрузка...</p>
+    <div id="app">
+        <header class="header">
+            <div class="container">
+                <div class="logo">
+                    <i class="fas fa-horse-head"></i>
+                    <span>Конно-спортивный клуб</span>
+                </div>
+                <div class="nav" id="nav-menu">
+                </div>
+                <div id="auth-section" class="auth-section">
                 </div>
             </div>
-        </div>
-    </main>
+        </header>
 
-    <footer class="footer">
-        <div class="container">
-            <p>© 2026 Конно-спортивный клуб. Все права защищены.</p>
-        </div>
-    </footer>
+        <main class="main">
+            <div class="container">
+                <div class="content-card" id="content">
+                </div>
+            </div>
+        </main>
 
-    <script src="js/app.js"></script>
+        <footer class="footer">
+            <div class="container">
+                <p>&copy; 2026 Конно-спортивный клуб. Все права защищены.</p>
+            </div>
+        </footer>
+    </div>
+
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            <h2>Вход в систему</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="login">Логин (телефон):</label>
+                    <input type="text" id="login" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Пароль:</label>
+                    <input type="password" id="password" class="form-control" required>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn" id="loginBtn">
+                        <i class="fas fa-sign-in-alt"></i> Войти
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('loginModal')">
+                        Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal">
+    </div>
+
+    <div id="profileModal" class="modal">
+    </div>
 </body>
 </html>

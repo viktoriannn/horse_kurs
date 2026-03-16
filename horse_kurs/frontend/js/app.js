@@ -5,43 +5,58 @@
 function showHome() {
     const content = document.getElementById('content');
     content.innerHTML = `
-        <h1>Добро пожаловать в конно-спортивный клуб</h1>
-        <p style="font-size: 18px; color: #666; margin-bottom: 30px;">Система управления клубом</p>
+        <h1>Конно-спортивный клуб</h1>
+        <p style="font-size: 18px; color: #666; margin-bottom: 30px;">Добро пожаловать!</p>
         
         <div class="card-grid">
             <div class="card" onclick="showHorses()">
                 <i class="fas fa-horse"></i>
                 <h3>Лошади</h3>
-                <p>Управление поголовьем</p>
-                <button class="btn btn-small">Перейти</button>
-            </div>
-            
-            <div class="card" onclick="showClients()">
-                <i class="fas fa-users"></i>
-                <h3>Клиенты</h3>
-                <p>Управление клиентами</p>
+                <p>Просмотр лошадей клуба</p>
                 <button class="btn btn-small">Перейти</button>
             </div>
             
             <div class="card" onclick="showStalls()">
                 <i class="fas fa-warehouse"></i>
                 <h3>Денники</h3>
-                <p>Управление денниками</p>
+                <p>Информация о денниках</p>
                 <button class="btn btn-small">Перейти</button>
             </div>
         </div>
     `;
+
+    if (typeof currentUser !== 'undefined' && currentUser) {
+        const cardGrid = document.querySelector('.card-grid');
+        if (cardGrid) {
+            cardGrid.innerHTML += `
+                <div class="card" onclick="showClients()">
+                    <i class="fas fa-users"></i>
+                    <h3>Клиенты</h3>
+                    <p>Управление клиентами</p>
+                    <button class="btn btn-small">Перейти</button>
+                </div>
+            `;
+        }
+    }
 }
 
 async function showHorses() {
     let html = '<h2>Лошади</h2>';
-    html += '<button class="btn" onclick="showAddHorse()">➕ Добавить лошадь</button>';
-    html += '<div id="horses-list">Загрузка...</div>';
 
+    if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'admin') {
+        html += '<button class="btn" onclick="showAddHorse()">➕ Добавить лошадь</button>';
+    }
+
+    html += '<div id="horses-list">Загрузка...</div>';
     document.getElementById('content').innerHTML = html;
 
     try {
-        let response = await fetch('/api/horses');
+        const headers = {};
+        if (typeof getAuthHeaders === 'function') {
+            Object.assign(headers, getAuthHeaders());
+        }
+
+        let response = await fetch('/api/horses', { headers });
         let horses = await response.json();
 
         if (horses.length === 0) {
@@ -71,6 +86,13 @@ async function showHorses() {
 }
 
 function showAddHorse() {
+    // Проверка прав
+    if (typeof currentUser === 'undefined' || !currentUser || currentUser.role !== 'admin') {
+        alert('У вас нет прав для добавления лошадей');
+        showHorses();
+        return;
+    }
+
     let html = `
         <h2>Добавить лошадь</h2>
         <div style="max-width: 500px">
@@ -114,9 +136,14 @@ async function saveHorse() {
     };
 
     try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (typeof getAuthHeaders === 'function') {
+            Object.assign(headers, getAuthHeaders());
+        }
+
         let response = await fetch('/api/horses', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: headers,
             body: JSON.stringify(horse)
         });
 
@@ -132,13 +159,26 @@ async function saveHorse() {
 }
 
 async function showClients() {
+    // Проверка авторизации
+    if (typeof currentUser === 'undefined' || !currentUser) {
+        alert('Необходимо авторизоваться');
+        if (typeof openModal === 'function') {
+            openModal('loginModal');
+        }
+        return;
+    }
+
     let html = '<h2>Клиенты</h2>';
     html += '<div id="clients-list">Загрузка...</div>';
-
     document.getElementById('content').innerHTML = html;
 
     try {
-        let response = await fetch('/api/clients');
+        const headers = {};
+        if (typeof getAuthHeaders === 'function') {
+            Object.assign(headers, getAuthHeaders());
+        }
+
+        let response = await fetch('/api/clients', { headers });
         let clients = await response.json();
 
         if (clients.length === 0) {
@@ -170,11 +210,15 @@ async function showClients() {
 async function showStalls() {
     let html = '<h2>Денники</h2>';
     html += '<div id="stalls-list">Загрузка...</div>';
-
     document.getElementById('content').innerHTML = html;
 
     try {
-        let response = await fetch('/api/stalls');
+        const headers = {};
+        if (typeof getAuthHeaders === 'function') {
+            Object.assign(headers, getAuthHeaders());
+        }
+
+        let response = await fetch('/api/stalls', { headers });
         let stalls = await response.json();
 
         if (stalls.length === 0) {
