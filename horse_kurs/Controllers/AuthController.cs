@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using horse_kurs.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -24,7 +24,7 @@ namespace horse_kurs.Controllers
         {
             try
             {
-                // Проверка администратора
+
                 if (login.Login == "admin" && login.Password == "admin")
                 {
                     var token = GenerateJwtToken("admin", 0, "Администратор");
@@ -46,7 +46,6 @@ namespace horse_kurs.Controllers
                     });
                 }
 
-                // Проверка тренера
                 var coach = await _context.Coaches
                     .Include(c => c.IdEmployeeNavigation)
                     .FirstOrDefaultAsync(c => c.IdEmployeeNavigation != null &&
@@ -54,9 +53,7 @@ namespace horse_kurs.Controllers
 
                 if (coach != null)
                 {
-                    // В реальном проекте здесь должна быть проверка хешированного пароля
-                    // Сейчас используем простую проверку для демо
-                    if (login.Password != "123") // Замените на нормальную проверку пароля
+                    if (login.Password != "123") 
                     {
                         return Unauthorized(new { Success = false, Message = "Неверный пароль" });
                     }
@@ -86,20 +83,18 @@ namespace horse_kurs.Controllers
                     });
                 }
 
-                // Проверка клиента
                 var client = await _context.Clients
                     .FirstOrDefaultAsync(c => c.Phone == login.Login);
 
                 if (client != null)
                 {
-                    if (login.Password != "123") // Замените на нормальную проверку пароля
+                    if (login.Password != "123") 
                     {
                         return Unauthorized(new { Success = false, Message = "Неверный пароль" });
                     }
 
                     var token = GenerateJwtToken("client", client.IdClient, client.Name);
 
-                    // Получаем дополнительную информацию о клиенте
                     var activeMembership = await _context.Memberships
                         .Where(m => m.IdClient == client.IdClient && m.Status == "Активен")
                         .FirstOrDefaultAsync();
@@ -249,7 +244,6 @@ namespace horse_kurs.Controllers
         [Authorize]
         public IActionResult Logout()
         {
-            // На стороне клиента нужно удалить токен
             return Ok(new { Success = true, Message = "Выход выполнен успешно" });
         }
 
@@ -272,8 +266,6 @@ namespace horse_kurs.Controllers
 
         private string GenerateJwtToken(string role, int userId, string name)
         {
-            // В реальном проекте здесь должна быть генерация JWT токена
-            // Сейчас возвращаем простой токен для демо
             return $"{role}-token-{userId}-{DateTime.Now.Ticks}";
         }
     }
