@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using horse_kurs.Models;
+﻿using horse_kurs.DTOs;
+using horse_kurs.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 
 namespace horse_kurs.Controllers
 {
@@ -8,47 +8,32 @@ namespace horse_kurs.Controllers
     [ApiController]
     public class LessonsController : ControllerBase
     {
-        private readonly EquestrianClubContext _context;
+        private readonly ILessonService _lessonService;
 
-        public LessonsController(EquestrianClubContext context)
+        public LessonsController(ILessonService lessonService)
         {
-            _context = context;
+            _lessonService = lessonService;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Lesson>>> GetLessons()
+        [HttpGet("schedule")]
+        public async Task<IActionResult> GetSchedule([FromQuery] DateTime date)
         {
-            return await _context.Lessons.ToListAsync();
+            return Ok(await _lessonService.GetScheduleAsync(date));
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Lesson>> GetLesson(int id)
+        [HttpPost("book")]
+        public async Task<IActionResult> Book([FromBody] LessonCreateDto dto)
         {
-            var lesson = await _context.Lessons.FindAsync(id);
-
-            if (lesson == null)
-            {
-                return NotFound();
-            }
-
-            return lesson;
+            var result = await _lessonService.BookLessonAsync(dto);
+            if (!result.Success) return BadRequest(result.Message);
+            return Ok(new { message = result.Message });
         }
 
-        [HttpGet("date/{date}")]
-        public async Task<ActionResult<IEnumerable<Lesson>>> GetLessonsByDate(DateOnly date)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Cancel(int id)
         {
-            return await _context.Lessons
-                .Where(l => l.Date == date)
-                .ToListAsync();
-        }
-
-        [HttpPost]
-        public async Task<ActionResult<Lesson>> PostLesson(Lesson lesson)
-        {
-            _context.Lessons.Add(lesson);
-            await _context.SaveChangesAsync();
-
-            return lesson;
+            var result = await _lessonService.CancelLessonAsync(id);
+            return result ? NoContent() : NotFound();
         }
     }
 }

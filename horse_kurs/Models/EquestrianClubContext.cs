@@ -16,7 +16,7 @@ public partial class EquestrianClubContext : DbContext
     }
 
     public virtual DbSet<Arena> Arenas { get; set; }
-
+    public virtual DbSet<Users> Users { get; set; }
     public virtual DbSet<Client> Clients { get; set; }
 
     public virtual DbSet<Coach> Coaches { get; set; }

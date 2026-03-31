@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using horse_kurs.Models;
+using horse_kurs.Interfaces;
+using horse_kurs.DTOs;
 
 namespace horse_kurs.Controllers
 {
@@ -8,39 +9,32 @@ namespace horse_kurs.Controllers
     [ApiController]
     public class HorsesController : ControllerBase
     {
-        private readonly EquestrianClubContext _context;
+        private readonly IHorseService _horseService;
 
-        public HorsesController(EquestrianClubContext context)
+        public HorsesController(IHorseService horseService)
         {
-            _context = context;
+            _horseService = horseService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Horse>>> GetHorses()
+        public async Task<ActionResult<IEnumerable<HorseDto>>> GetHorses()
         {
-            return await _context.Horses.ToListAsync();
+            var horses = await _horseService.GetAllHorsesAsync();
+            return Ok(horses);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Horse>> GetHorse(int id)
+        public async Task<ActionResult<HorseDto>> GetHorse(int id)
         {
-            var horse = await _context.Horses.FindAsync(id);
-
-            if (horse == null)
-            {
-                return NotFound();
-            }
-
-            return horse;
+            var horse = await _horseService.GetHorseByIdAsync(id);
+            return horse == null ? NotFound() : Ok(horse);
         }
 
         [HttpPost]
-        public async Task<ActionResult<Horse>> PostHorse(Horse horse)
+        public async Task<ActionResult<HorseDto>> PostHorse(Horse horse)
         {
-            _context.Horses.Add(horse);
-            await _context.SaveChangesAsync();
-
-            return horse;
+            var createdHorse = await _horseService.CreateHorseAsync(horse);
+            return CreatedAtAction(nameof(GetHorse), new { id = createdHorse.Id }, createdHorse);
         }
     }
 }
