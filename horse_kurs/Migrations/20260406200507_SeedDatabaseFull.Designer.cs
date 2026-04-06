@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using horse_kurs.Models;
 
@@ -11,9 +12,11 @@ using horse_kurs.Models;
 namespace horse_kurs.Migrations
 {
     [DbContext(typeof(EquestrianClubContext))]
-    partial class EquestrianClubContextModelSnapshot : ModelSnapshot
+    [Migration("20260406200507_SeedDatabaseFull")]
+    partial class SeedDatabaseFull
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

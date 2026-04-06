@@ -49,7 +49,7 @@ namespace horse_kurs.Services
             _context.Horses.Add(horse);
             await _context.SaveChangesAsync();
 
-            return new HorseDto { Id = horse.IdHorse, Name = horse.Name }; // Упрощенно
+            return new HorseDto { Id = horse.IdHorse, Name = horse.Name };
         }
     }
 }

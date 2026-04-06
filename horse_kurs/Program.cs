@@ -21,7 +21,9 @@ builder.Services.AddScoped<IHorseService, HorseService>();
 builder.Services.AddScoped<ILessonService, LessonService>();
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<ICompetitionService, CompetitionService>();
+builder.Services.AddScoped<ExcelExportService>();
 
+// --- Аутентификация и Авторизация ---
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -57,18 +59,13 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<EquestrianClubContext>();
     try
     {
-        Console.WriteLine("Проверка базы данных...");
-        await context.Database.EnsureCreatedAsync();
-
-        if (!await context.Horses.AnyAsync())
-        {
-            Console.WriteLine("База пуста. Запуск SQL-скрипта инициализации...");
-            await InitializeDatabaseFromScript(context);
-        }
+        Console.WriteLine("Применение миграций базы данных...");
+        await context.Database.MigrateAsync();
+        Console.WriteLine("База данных успешно обновлена и готова к работе.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Ошибка при подготовке БД: {ex.Message}");
+        Console.WriteLine($"Ошибка при миграции БД: {ex.Message}");
     }
 }
 
@@ -81,7 +78,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 
 app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = new PhysicalFileProvider(frontendPath) });
@@ -90,41 +86,20 @@ app.UseStaticFiles(new StaticFileOptions { FileProvider = new PhysicalFileProvid
 app.UseAuthentication();
 app.UseAuthorization();
 
-
-// Маппинг контроллеров API
 app.MapControllers();
-
 app.MapFallbackToFile("index.html", new StaticFileOptions { FileProvider = new PhysicalFileProvider(frontendPath) });
+
+app.MapGet("/api/excel", async (ExcelExportService service) =>
+{
+    var fileBytes = await service.GetExcelAsync();
+    return Results.File(
+        fileBytes,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        $"EquestrianClub_Report_{DateTime.Now:yyyyMMddHHmmss}.xlsx"
+    );
+});
+
+app.MapControllers();
 
 Console.WriteLine("Приложение Equestrian Club успешно запущено!");
 await app.RunAsync();
-
-async Task InitializeDatabaseFromScript(EquestrianClubContext context)
-{
-    try
-    {
-        string sqlScriptPath = Path.Combine(Directory.GetCurrentDirectory(), "Database", "CreateDatabase.sql");
-        if (File.Exists(sqlScriptPath))
-        {
-            string sqlScript = await File.ReadAllTextAsync(sqlScriptPath);
-            var commands = sqlScript.Split(new[] { "GO" }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(cmd => cmd.Trim())
-                .Where(cmd => !string.IsNullOrWhiteSpace(cmd) && !cmd.StartsWith("USE "));
-
-            foreach (var command in commands)
-            {
-                try { await context.Database.ExecuteSqlRawAsync(command); }
-                catch (Exception ex) { Console.WriteLine($"Ошибка в команде скрипта: {ex.Message}"); }
-            }
-            Console.WriteLine("Данные из SQL скрипта успешно импортированы.");
-        }
-        else
-        {
-            Console.WriteLine("Файл скрипта CreateDatabase.sql не найден.");
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Критическая ошибка выполнения скрипта: {ex.Message}");
-    }
-}
