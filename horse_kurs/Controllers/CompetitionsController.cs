@@ -1,69 +1,58 @@
-﻿using horse_kurs.DTOs;
+﻿using Microsoft.AspNetCore.Mvc;
+using horse_kurs.DTOs;
 using horse_kurs.Interfaces;
-using horse_kurs.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace horse_kurs.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class CompetitionsController : ControllerBase
     {
-        private readonly EquestrianClubContext _context;
         private readonly ICompetitionService _competitionService;
 
-        public CompetitionsController(EquestrianClubContext context, ICompetitionService competitionService)
+        public CompetitionsController(ICompetitionService competitionService)
         {
-            _context = context;
             _competitionService = competitionService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Competition>>> GetCompetitions()
+        public async Task<IActionResult> GetAll()
         {
-            return await _context.Competitions
-                .OrderByDescending(c => c.Date)
-                .ToListAsync();
+            var competitions = await _competitionService.GetAllCompetitionsAsync();
+            return Ok(competitions);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult> GetCompetitionDetails(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var competition = await _context.Competitions
-                .Include(c => c.Participations)
-                    .ThenInclude(p => p.IdClientNavigation)
-                .Include(c => c.Participations)
-                    .ThenInclude(p => p.IdHorseNavigation)
-                .FirstOrDefaultAsync(c => c.IdCompetition == id);
-
-            if (competition == null) return NotFound();
-
-            return Ok(new
-            {
-                competition.Name,
-                competition.Date,
-                Participants = competition.Participations.Select(p => new
-                {
-                    Rider = $"{p.IdClientNavigation.Surname} {p.IdClientNavigation.Name}",
-                    Horse = p.IdHorseNavigation.Name,
-                    Place = p.ResultPlace,
-                    p.Score
-                })
-            });
+            var competition = await _competitionService.GetCompetitionByIdAsync(id);
+            if (competition == null)
+                return NotFound();
+            return Ok(competition);
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterParticipationDto dto)
         {
-            var result = await _competitionService.RegisterRiderAsync(dto);
+            var result = await _competitionService.RegisterParticipationAsync(dto);
+            if (!result)
+                return BadRequest(new { message = "Не удалось зарегистрироваться на соревнование" });
 
-            if (!result.Success)
-            {
-                return BadRequest(new { message = result.Message });
-            }
+            return Ok(new { message = "Вы успешно зарегистрированы на соревнование" });
+        }
 
-            return Ok(new { message = result.Message });
+        [HttpGet("client/{clientId}")]
+        public async Task<IActionResult> GetByClient(int clientId)
+        {
+            var participations = await _competitionService.GetParticipationsByClientAsync(clientId);
+            return Ok(participations);
+        }
+
+        [HttpGet("competition/{competitionId}/participants")]
+        public async Task<IActionResult> GetParticipants(int competitionId)
+        {
+            var participants = await _competitionService.GetParticipationsByCompetitionAsync(competitionId);
+            return Ok(participants);
         }
     }
 }

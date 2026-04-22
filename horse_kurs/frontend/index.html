@@ -2,73 +2,178 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Конный Клуб "Equestrian"</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - Конный Клуб</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    <link rel="stylesheet" href="css/style.css">
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f0e8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Карточка входа */
+        .login-card {
+            background: #2c3e50;
+            border-radius: 12px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+            .login-header h2 {
+                color: #ffffff;
+                font-size: 24px;
+                margin-bottom: 5px;
+                font-weight: 600;
+            }
+
+            .login-header p {
+                color: #cbd5e1;
+                font-size: 14px;
+            }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #e0e0e0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            background: #ffffff;
+            border: 1px solid #4a6a7a;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            color: #2c3e50;
+        }
+
+            .form-control:focus {
+                outline: none;
+                border-color: #a8c4a0;
+                box-shadow: 0 0 0 2px rgba(168, 196, 160, 0.2);
+            }
+
+            .form-control::placeholder {
+                color: #94a3b8;
+            }
+
+        .btn-login {
+            width: 100%;
+            padding: 10px;
+            background: #a8c4a0;
+            color: #2c3e50;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+            .btn-login:hover {
+                background: #95b58c;
+                transform: translateY(-1px);
+            }
+
+        .error-msg {
+            color: #f0a0a0;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+    </style>
 </head>
 <body>
-
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">Equestrian Club</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="#" onclick="loadPage('horses')">Лошади</a>
-                <a class="nav-link" href="#" onclick="loadPage('schedule')">Расписание</a>
-                <a class="nav-link" href="#" onclick="loadPage('profile')">Личный кабинет</a>
-                <a class="nav-link" href="#" onclick="loadPage('competitions')">Соревнования</a>
-                <a class="nav-link" href="#" onclick="loadPage('booking')">Записаться на урок</a>
-            </div>
+    <div class="login-card">
+        <div class="login-header">
+            <h2>Equestrian Club</h2>
+            <p>Авторизация в системе управления</p>
         </div>
-    </nav>
 
-    <div class="hero-wrapper">
-        <img src="img/fon.jpg" alt="Equestrian Club Background" class="hero-image">
-        <div class="hero-overlay">
-            <div class="container text-center text-white">
-                <h1 class="display-3 fw-bold">Equestrian Club</h1>
-                <p class="lead">Управление тренировками, лошадьми и стартами в одном месте</p>
-            </div>
+        <div class="form-group">
+            <label class="form-label">Логин</label>
+            <input type="text" id="loginInput" class="form-control" placeholder="Введите логин">
         </div>
+
+        <div class="form-group">
+            <label class="form-label">Пароль</label>
+            <input type="password" id="passwordInput" class="form-control" placeholder="Введите пароль">
+        </div>
+
+        <button onclick="doLogin()" class="btn-login">Войти</button>
+
+        <div id="errorMsg" class="error-msg"></div>
     </div>
 
-    <div class="container my-5" id="main-content">
-        <div class="text-center">
-            <h3>Выберите раздел в меню выше</h3>
-        </div>
-    </div>
+    <script>
+        const API_URL = 'http://localhost:28280/api';
 
-    <script src="js/app.js"></script>
-    <footer class="bg-dark text-white pt-5 pb-3 mt-auto">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4 mb-4">
-                    <h5 class="text-uppercase fw-bold text-info mb-3">Equestrian Club</h5>
-                    <p class="text-light">Профессиональное обучение верховой езде, аренда лошадей и подготовка к соревнованиям любого уровня.</p>
-                </div>
+        async function doLogin() {
+            const login = document.getElementById('loginInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const errorMsg = document.getElementById('errorMsg');
 
-                <div class="col-md-4 mb-4">
-                    <h5 class="text-uppercase fw-bold text-white mb-3">Навигация</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="#" class="text-white-50 text-decoration-none footer-link" onclick="loadPage('horses')">Наши лошади</a></li>
-                        <li><a href="#" class="text-white-50 text-decoration-none footer-link" onclick="loadPage('schedule')">Расписание</a></li>
-                        <li><a href="#" class="text-white-50 text-decoration-none footer-link" onclick="showBookingForm()">Записаться</a></li>
-                    </ul>
-                </div>
+            if (!login || !password) {
+                errorMsg.innerText = 'Введите логин и пароль';
+                return;
+            }
 
-                <div class="col-md-4 mb-4">
-                    <h5 class="text-uppercase fw-bold text-white mb-3">Контакты</h5>
-                    <p class="text-white-50 mb-1">ул. Конная, д. 1, Свердловская область</p>
-                    <p class="text-white-50 mb-1">+7 (999) 123-45-67</p>
-                    <p class="text-white-50">info@equestrian-club.ru</p>
-                </div>
-            </div>
+            errorMsg.innerText = 'Вход...';
 
-            <hr class="border-secondary">
-            <div class="text-center text-white-50">
-                <small>&copy; 2026 Конный клуб "Equestrian". Все права защищены.</small>
-            </div>
-        </div>
-    </footer>
+            try {
+                const response = await fetch(`${API_URL}/Auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login, password })
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    if (user.token) localStorage.setItem('token', user.token);
+
+                    if (user.role === 'Admin') window.location.href = '/admin.html';
+                    else if (user.role === 'Coach') window.location.href = '/coach.html';
+                    else window.location.href = '/client.html';
+                } else {
+                    errorMsg.innerText = 'Неверный логин или пароль';
+                }
+            } catch (error) {
+                errorMsg.innerText = 'Ошибка подключения к серверу';
+            }
+        }
+
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+            const user = JSON.parse(savedUser);
+            if (user.role === 'Admin') window.location.href = '/admin.html';
+            else if (user.role === 'Coach') window.location.href = '/coach.html';
+            else window.location.href = '/client.html';
+        }
+    </script>
 </body>
 </html>

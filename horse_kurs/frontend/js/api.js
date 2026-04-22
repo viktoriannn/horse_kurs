@@ -1,165 +1,70 @@
 ﻿
-const API_BASE = ''; 
+const API_URL = 'http://localhost:28280/api';
 
-async function apiRequest(endpoint, method = 'GET', data = null) {
-    const options = {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    };
+function setAuthToken(token) {
+    localStorage.setItem('token', token);
+}
 
-    if (data) {
-        options.body = JSON.stringify(data);
+function getAuthToken() {
+    return localStorage.getItem('token');
+}
+
+async function apiRequest(endpoint, method = 'GET', body = null) {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = getAuthToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const options = { method, headers };
+    if (body) options.body = JSON.stringify(body);
+
+    const response = await fetch(`${API_URL}${endpoint}`, options);
+
+    if (response.status === 401) {
+        localStorage.clear();
+        window.location.href = '/index.html';
+        return null;
     }
 
-    try {
-        const response = await fetch(`${API_BASE}/api/${endpoint}`, options);
-
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(error || `Ошибка ${response.status}`);
-        }
-
-        if (response.status === 204) {
-            return null;
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+    if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Ошибка запроса');
     }
+
+    if (response.status === 204) return null;
+    return await response.json();
 }
 
-const HorsesAPI = {
-    getAll: () => apiRequest('horses'),
-    getById: (id) => apiRequest(`horses/${id}`),
-    getByStatus: (status) => apiRequest(`horses/status/${encodeURIComponent(status)}`),
-    getByHealth: (health) => apiRequest(`horses/health/${encodeURIComponent(health)}`),
-    getByBreed: (breed) => apiRequest(`horses/breed/${encodeURIComponent(breed)}`),
-    getAvailable: () => apiRequest('horses/available'),
-    getBreedStats: () => apiRequest('horses/stats/breeds'),
-    create: (horse) => apiRequest('horses', 'POST', horse),
-    updateStatus: (id, status) => apiRequest(`horses/${id}/status`, 'PUT', status),
-    updateHealth: (id, health) => apiRequest(`horses/${id}/health`, 'PUT', health)
+const AuthAPI = {
+    login: (login, password) => apiRequest('/Auth/login', 'POST', { login, password })
 };
 
-const ClientsAPI = {
-    getAll: () => apiRequest('clients'),
-    getById: (id) => apiRequest(`clients/${id}`),
-    getByLevel: (level) => apiRequest(`clients/level/${encodeURIComponent(level)}`),
-    getWithMemberships: () => apiRequest('clients/with-memberships'),
-    getActive: () => apiRequest('clients/active'),
-    create: (client) => apiRequest('clients', 'POST', client),
-    updateBalance: (id, amount) => apiRequest(`clients/${id}/balance`, 'PUT', amount)
+const AdminAPI = {
+    getUsers: () => apiRequest('/Equestrian/admin/users'),
+    updateUserRole: (userId, newRole) => apiRequest(`/Equestrian/admin/user/${userId}/role`, 'PUT', newRole),
+    exportToExcel: () => window.open(`${API_URL}/Equestrian/admin/export/full`, '_blank'),
+    createEmployee: (data) => apiRequest('/Equestrian/admin/employee', 'POST', data),
+    createClient: (data) => apiRequest('/Equestrian/admin/client', 'POST', data),
+    createHorse: (data) => apiRequest('/Equestrian/admin/horse', 'POST', data)
 };
 
-const StallsAPI = {
-    getAll: () => apiRequest('stalls'),
-    getById: (id) => apiRequest(`stalls/${id}`),
-    getFree: () => apiRequest('stalls/free'),
-    getByType: (type) => apiRequest(`stalls/type/${encodeURIComponent(type)}`),
-    updateStatus: (id, status) => apiRequest(`stalls/${id}/status`, 'PUT', status),
-    assignHorse: (stallId, horseId) => apiRequest(`stalls/${stallId}/assign-horse/${horseId}`, 'PUT')
+const CoachAPI = {
+    getSchedule: (coachId) => apiRequest(`/Equestrian/coach/${coachId}/schedule`)
 };
 
-const LessonsAPI = {
-    getAll: () => apiRequest('lessons'),
-    getById: (id) => apiRequest(`lessons/${id}`),
-    getByDate: (date) => apiRequest(`lessons/date/${date}`),
-    getByClient: (clientId) => apiRequest(`lessons/client/${clientId}`),
-    getByCoach: (coachId) => apiRequest(`lessons/coach/${coachId}`),
-    create: (lesson) => apiRequest('lessons', 'POST', lesson)
+const ClientAPI = {
+    getProfile: (clientId) => apiRequest(`/Equestrian/client/${clientId}/profile`),
+    getCompetitions: () => apiRequest('/Equestrian/competitions'),
+    registerForCompetition: (data) => apiRequest('/Equestrian/competition/register', 'POST', data),
+    getClientSchedule: (clientId, startDate, endDate) => {
+        let url = `/Equestrian/client/${clientId}/schedule`;    
+        const params = [];
+        if (startDate) params.push(`startDate=${encodeURIComponent(startDate)}`);
+        if (endDate) params.push(`endDate=${encodeURIComponent(endDate)}`);
+        if (params.length) url += '?' + params.join('&');
+        return apiRequest(url);
+    },
+    getBookingData: () => apiRequest('/Equestrian/booking/data'),
+    getAvailableHorses: (date, lessonType) => apiRequest(`/Equestrian/booking/horses?date=${date}&lessonType=${encodeURIComponent(lessonType)}`),
+    createBooking: (data) => apiRequest('/Equestrian/booking/create', 'POST', data),
+    printSchedule: (clientId) => window.open(`${API_URL}/Equestrian/client/${clientId}/schedule/print`, '_blank')
 };
-
-const CompetitionsAPI = {
-    getAll: () => apiRequest('competitions'),
-    getById: (id) => apiRequest(`competitions/${id}`),
-    getUpcoming: () => apiRequest('competitions/upcoming'),
-    getByType: (type) => apiRequest(`competitions/type/${encodeURIComponent(type)}`),
-    create: (competition) => apiRequest('competitions', 'POST', competition),
-    updateStatus: (id, status) => apiRequest(`competitions/${id}/status`, 'PUT', status)
-};
-
-const ParticipationsAPI = {
-    getAll: () => apiRequest('participations'),
-    getByCompetition: (competitionId) => apiRequest(`participations/competition/${competitionId}`),
-    getByClient: (clientId) => apiRequest(`participations/client/${clientId}`),
-    create: (participation) => apiRequest('participations', 'POST', participation),
-    updateResult: (id, place, score) => apiRequest(`participations/${id}/result`, 'PUT', { place, score })
-};
-
-const PaymentsAPI = {
-    getAll: () => apiRequest('payments'),
-    getByClient: (clientId) => apiRequest(`payments/client/${clientId}`),
-    getByDate: (date) => apiRequest(`payments/date/${date}`),
-    getByPeriod: (from, to) => apiRequest(`payments/period?from=${from}&to=${to}`),
-    getDailyStats: () => apiRequest('payments/stats/daily'),
-    create: (payment) => apiRequest('payments', 'POST', payment)
-};
-
-const MembershipsAPI = {
-    getAll: () => apiRequest('memberships'),
-    getByClient: (clientId) => apiRequest(`memberships/client/${clientId}`),
-    getActive: () => apiRequest('memberships/active'),
-    getExpiring: () => apiRequest('memberships/expiring'),
-    create: (membership) => apiRequest('memberships', 'POST', membership),
-    useLesson: (id) => apiRequest(`memberships/${id}/use-lesson`, 'PUT')
-};
-
-function formatDate(dateString) {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU');
-}
-
-function formatDateTime(dateTimeString) {
-    if (!dateTimeString) return '—';
-    const date = new Date(dateTimeString);
-    return date.toLocaleString('ru-RU');
-}
-
-function getStatusBadgeClass(status) {
-    switch (status) {
-        case 'В работе':
-        case 'Активен':
-        case 'Доступен':
-        case 'Свободен':
-        case 'Здорова':
-        case 'Завершено':
-            return 'bg-success';
-
-        case 'На отдыхе':
-        case 'Запланировано':
-        case 'Ожидает':
-        case 'Регистрация':
-            return 'bg-warning';
-
-        case 'На лечении':
-        case 'Больна':
-        case 'Травмирована':
-        case 'Отменено':
-        case 'Просрочен':
-            return 'bg-danger';
-
-        case 'Занят':
-        case 'Идет':
-            return 'bg-info';
-
-        default:
-            return 'bg-secondary';
-    }
-}
-
-function calculateAge(birthDate) {
-    if (!birthDate) return '—';
-    const birth = new Date(birthDate);
-    const now = new Date();
-    let age = now.getFullYear() - birth.getFullYear();
-    const m = now.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
-        age--;
-    }
-    return age + ' лет';
-}

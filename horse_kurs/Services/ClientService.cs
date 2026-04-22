@@ -24,8 +24,9 @@ namespace horse_kurs.Services
 
             return new ClientProfileDto
             {
-                Id = client.IdClient,
-                FullName = $"{client.Surname} {client.Name}",
+                IdClient = client.IdClient,
+                FullName = $"{client.Surname} {client.Name} {client.Patronymic}",
+                Phone = client.Phone,
                 Balance = client.Balance,
                 ActiveMemberships = client.Memberships
                     .Where(m => m.Status == "Активен" && m.ValidUntil >= DateOnly.FromDateTime(DateTime.Now))
@@ -34,8 +35,10 @@ namespace horse_kurs.Services
                         Id = m.IdMembership,
                         Type = m.Type,
                         RemainingLessons = m.LessonsTotal,
-                        ValidUntil = m.ValidUntil
-                    }).ToList()
+                        ValidUntil = m.ValidUntil,
+                        Status = m.Status
+                    }).ToList(),
+                UpcomingLessons = new List<ClientLessonDto>() 
             };
         }
 
@@ -55,7 +58,8 @@ namespace horse_kurs.Services
 
             if (activeMembership == null)
             {
-                return false;
+                await _context.SaveChangesAsync();
+                return true;
             }
 
             var payment = new Payment
@@ -64,7 +68,7 @@ namespace horse_kurs.Services
                 MethodPaid = "Карта",
                 PaymentDate = DateTime.Now,
                 Status = "Завершено",
-                IdMembership = activeMembership.IdMembership 
+                IdMembership = activeMembership.IdMembership
             };
 
             _context.Payments.Add(payment);

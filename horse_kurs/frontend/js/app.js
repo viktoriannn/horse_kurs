@@ -1,314 +1,341 @@
-﻿const API_URL = "http://localhost:28280/api";
+﻿const API_URL = 'http://localhost:28280/api';
+let currentUser = null;
 
-let currentUser = {
-    isLoggedIn: false,
-    token: null,
-    clientId: null,
-    name: ''
-};
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
 
-function checkAuth() {
-    const savedId = localStorage.getItem('clientId');
-    if (savedId) {
-        currentUser.isLoggedIn = true;
-        currentUser.clientId = savedId;
-        currentUser.name = localStorage.getItem('userName');
-        updateNav();
+    const loginBtn = document.getElementById('login-btn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', handleLogin);
+    }
+});
+
+// ========== СИСТЕМА АВТОРИЗАЦИИ ==========
+
+async function checkAuth() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+        try {
+            currentUser = JSON.parse(savedUser);
+            showMainApp();
+            loadPage('profile');
+        } catch (e) {
+            logout();
+        }
+    } else {
+        showLoginForm();
     }
 }
+
+async function handleLogin() {
+    const loginInput = document.getElementById('login-input').value;
+    const passwordInput = document.getElementById('password-input').value;
+    const errorMsg = document.getElementById('error-msg');
+
+    if (!loginInput || !passwordInput) {
+        errorMsg.innerText = 'Введите логин и пароль';
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/Auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login: loginInput, password: passwordInput })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            currentUser = data;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            showMainApp();
+            loadPage('profile');
+        } else {
+            errorMsg.innerText = data.message || 'Неверный логин или пароль';
+        }
+    } catch (error) {
+        console.error(error);
+        errorMsg.innerText = 'Ошибка подключения к серверу';
+    }
+}
+
+function logout() {
+    localStorage.removeItem('currentUser');
+    currentUser = null;
+    showLoginForm();
+}
+
+// ========== УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ ==========
+
+function showLoginForm() {
+    document.getElementById('login-wrapper').style.display = 'block';
+    document.getElementById('main-nav').style.display = 'none';
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('main-footer').style.display = 'none';
+}
+
+function showMainApp() {
+    document.getElementById('login-wrapper').style.display = 'none';
+    document.getElementById('main-nav').style.display = 'flex';
+    document.getElementById('main-content').style.display = 'block';
+    document.getElementById('main-footer').style.display = 'block';
+
+    const name = currentUser.fullName || currentUser.FullName || currentUser.login || 'Пользователь';
+    document.getElementById('userNameDisplay').innerText = name;
+    updateNavigation();
+}
+
+function updateNavigation() {
+    const navMenu = document.getElementById('nav-menu');
+    navMenu.innerHTML = '';
+
+    const role = (currentUser.role || currentUser.Role);
+    const commonItems = [{ name: 'Профиль', icon: 'fa-user', page: 'profile' }];
+    let roleSpecificItems = [];
+
+    if (role === 'Admin') {
+        roleSpecificItems = [
+            { name: 'Пользователи', icon: 'fa-users', page: 'users' },
+            { name: 'Лошади', icon: 'fa-horse', page: 'horses' },
+            { name: 'Соревнования', icon: 'fa-trophy', page: 'competitions' },
+            { name: 'Отчеты', icon: 'fa-chart-bar', page: 'reports' }
+        ];
+    } else if (role === 'Coach') {
+        roleSpecificItems = [
+            { name: 'Расписание', icon: 'fa-calendar-alt', page: 'schedule' },
+            { name: 'Лошади', icon: 'fa-horse', page: 'horses' }
+        ];
+    } else {
+        roleSpecificItems = [
+            { name: 'Мои занятия', icon: 'fa-calendar-check', page: 'my-lessons' },
+            { name: 'Запись', icon: 'fa-book', page: 'booking' },
+            { name: 'Соревнования', icon: 'fa-trophy', page: 'competitions' }
+        ];
+    }
+
+    [...commonItems, ...roleSpecificItems].forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'nav-item';
+        li.innerHTML = `
+            <a class="nav-link" href="#" onclick="loadPage('${item.page}')">
+                <i class="fas ${item.icon} me-1"></i> ${item.name}
+            </a>`;
+        navMenu.appendChild(li);
+    });
+}
+
+// ========== РОУТИНГ (ЗАГРУЗКА СТРАНИЦ) ==========
 
 async function loadPage(page) {
     const container = document.getElementById('main-content');
-    container.innerHTML = '<div class="text-center my-5"><div class="spinner-border text-primary"></div></div>';
-    container.scrollIntoView({ behavior: 'smooth' });
+    container.innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary"></div></div>';
 
     switch (page) {
-        case 'horses':
-            await loadHorses();
-            break;
-        case 'schedule':
-            loadSchedulePage();
-            break;
-        case 'competitions':
-            await loadCompetitions();
-            break;
-        case 'profile':
-            const id = localStorage.getItem('clientId') || 1;
-            await loadProfile(id);
-            break;
-        case 'booking':
-            showBookingForm();
-            break;
-        default:
-            container.innerHTML = '<h3 class="text-center mt-5">Выберите интересующий вас раздел</h3>';
+        case 'profile': await loadProfile(container); break;
+        case 'my-lessons': await loadMyLessons(container); break;
+        case 'booking': await loadBookingForm(container); break;
+        case 'schedule': await loadCoachSchedule(container); break;
+        case 'users': await loadUsers(container); break;
+        case 'horses': await loadHorses(container); break;
+        case 'competitions': await loadCompetitions(container); break;
+        case 'reports': await loadReports(container); break;
+        default: container.innerHTML = '<h4>Страница не найдена</h4>';
     }
 }
-async function loadHorses() {
-    const container = document.getElementById('main-content');
+
+// ========== МОДУЛИ КОНТЕНТА ==========
+
+async function loadProfile(container) {
+    const role = currentUser.role || currentUser.Role;
+    const clientId = currentUser.idClient || currentUser.IdClient;
+
+    if (role === 'Admin' && !clientId) {
+        container.innerHTML = `<div class="alert alert-info"><h4>Админ-панель</h4><p>Вы зашли как системный администратор.</p></div>`;
+        return;
+    }
+
     try {
-        const response = await fetch(`${API_URL}/horses`);
-        const horses = await response.json();
+        const response = await fetch(`${API_URL}/Equestrian/client/${clientId}/profile`);
+        if (!response.ok) throw new Error('Данные недоступны');
+        const profile = await response.json();
 
-        let html = '<h2 class="mb-5 text-center fw-bold">Наши лошади</h2><div class="row">';
-
-        horses.forEach(h => {
-            const status = h.stateOfHealth || h.StateOfHealth || "Здорова";
-
-            let badgeClass = 'bg-success'; 
-            if (status.toLowerCase().includes('болен') || status.toLowerCase().includes('травма')) {
-                badgeClass = 'bg-danger';
-            } else if (status.toLowerCase().includes('отдых')) {
-                badgeClass = 'bg-warning text-dark';
-            }
-
-            html += `
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body text-center p-4">
-                            <h5 class="card-title fw-bold mb-3">${h.name}</h5>
-                            <p class="card-text text-muted mb-3">
-                                <strong>Порода:</strong> ${h.breed}
-                            </p>
-                            <span class="badge ${badgeClass} px-3 py-2 rounded-pill" style="font-size: 0.9rem;">
-                                ${status}
-                            </span>
+        container.innerHTML = `
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-circle fa-5x text-primary mb-3"></i>
+                            <h4>${profile.fullName || 'Пользователь'}</h4>
+                            <p class="text-muted">${profile.levelOfTraining || 'Уточняется'}</p>
+                            <p><i class="fas fa-phone me-2"></i> ${profile.phone || '—'}</p>
                         </div>
                     </div>
-                </div>`;
-        });
-        container.innerHTML = html + '</div>';
-    } catch (err) {
-        container.innerHTML = '<div class="alert alert-danger">Не удалось загрузить список лошадей.</div>';
-    }
-}
-async function loadProfile(clientId) {
-    const container = document.getElementById('main-content');
-    try {
-        const response = await fetch(`${API_URL}/clients/${clientId}/profile`);
-        const p = await response.json();
-
-        container.innerHTML = `
-            <div class="card shadow p-4 mx-auto" style="max-width: 600px;">
-                <h2 class="text-center">${p.fullName}</h2>
-                <hr>
-                <div class="d-flex justify-content-between">
-                    <span>Баланс:</span>
-                    <h4 class="text-success">${p.balance} ₽</h4>
                 </div>
-                <h5 class="mt-4">Ваши абонементы:</h5>
-                <div class="list-group">
-                    ${p.activeMemberships && p.activeMemberships.length > 0
-                ? p.activeMemberships.map(m => `<div class="list-group-item">${m.type} - до ${m.validUntil}</div>`).join('')
-                : '<p class="text-muted">Нет активных абонементов</p>'}
+                <div class="col-md-8">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">Баланс</h6>
+                            <h2 class="text-primary">${(profile.balance || 0).toLocaleString()} руб.</h2>
+                            <button class="btn btn-outline-success" onclick="showTopUpModal()">Пополнить</button>
+                        </div>
+                    </div>
                 </div>
             </div>`;
-    } catch (err) {
-        container.innerHTML = '<div class="alert alert-danger">Ошибка загрузки профиля. Убедитесь, что клиент с таким ID существует.</div>';
+    } catch (e) {
+        container.innerHTML = `<div class="alert alert-danger">Ошибка: ${e.message}</div>`;
     }
 }
 
-function loadSchedulePage() {
-    const container = document.getElementById('main-content');
-    const today = new Date().toISOString().split('T')[0];
+async function loadBookingForm(container) {
     container.innerHTML = `
-        <h2 class="text-center">Расписание</h2>
-        <div id="schedule-list" class="list-group mt-3">Загрузка...</div>
-    `;
-    fetchSchedule(today);
-}
-
-async function fetchSchedule(date) {
-    try {
-        const response = await fetch(`${API_URL}/lessons/schedule?date=${date}`);
-        const data = await response.json();
-        const list = document.getElementById('schedule-list');
-
-        if (!data || data.length === 0) {
-            list.innerHTML = '<p class="text-center">Занятий на эту дату пока нет.</p>';
-            return;
-        }
-
-        list.innerHTML = data.map(l => `
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>${l.type}</strong><br>
-                    <small>Клиент: ${l.clientName} | Лошадь: ${l.horseName}</small>
-                </div>
-                <span class="badge bg-primary rounded-pill">${l.date.split('T')[1].substring(0, 5)}</span>
-            </div>
-        `).join('');
-    } catch (err) {
-        document.getElementById('schedule-list').innerHTML = "Ошибка загрузки расписания.";
-    }
-}
-
-async function loadCompetitions() {
-    const container = document.getElementById('main-content');
-    try {
-        const response = await fetch(`${API_URL}/competitions`);
-        const comps = await response.json();
-
-        let html = '<h2 class="text-center mb-4">Ближайшие старты</h2><div class="list-group shadow-sm">';
-        comps.forEach(c => {
-            html += `
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-0">${c.name}</h5>
-                        <small class="text-muted">Дата: ${c.date}</small>
-                    </div>
-                    <button class="btn btn-warning btn-sm" onclick="alert('Регистрация через ЛК')">Участвовать</button>
-                </div>`;
-        });
-        container.innerHTML = html + '</div>';
-    } catch (err) {
-        container.innerHTML = '<div class="alert alert-danger">Ошибка загрузки соревнований.</div>';
-    }
-}
-
-function showBookingForm() {
-
-    const container = document.getElementById('main-content');
-
-    container.innerHTML = `
-
-        <div class="card mx-auto" style="max-width: 500px;">
+        <div class="card shadow-sm max-width-600 mx-auto">
+            <div class="card-header bg-primary text-white"><h5>Запись на занятие</h5></div>
             <div class="card-body">
-                <h3 class="card-title text-center mb-4">Запись на тренировку</h3>
-                <form id="bookForm">
-                    <div class="mb-3">
-                        <label class="form-label">Дата и время</label>
-                        <input type="datetime-local" class="form-control" id="lessonDate" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Тип занятия</label>
-                        <select class="form-select" id="lessonType">
+                <form id="bookingForm">
+                    <div class="mb-3"><label>Дата</label><input type="date" id="lessonDate" class="form-control" required></div>
+                    <div class="mb-3"><label>Тип</label>
+                        <select id="lessonType" class="form-select">
                             <option value="Индивидуальное">Индивидуальное</option>
                             <option value="Групповое">Групповое</option>
-                            <option value="Конкур">Конкур</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">ID Клиента (для теста)</label>
-                        <input type="number" class="form-control" id="clientId" value="1">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">ID Тренера</label>
-                        <input type="number" class="form-control" id="coachId" value="1">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">ID Лошади</label>
-                        <input type="number" class="form-control" id="horseId" value="1">
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Забронировать</button>
+                    <div class="mb-3"><label>ID Тренера</label><input type="number" id="coachId" class="form-control" required></div>
+                    <div class="mb-3"><label>ID Арены</label><input type="number" id="arenaId" class="form-control" required></div>
+                    <button type="submit" class="btn btn-primary w-100">Записаться</button>
                 </form>
-                <div id="formMessage" class="mt-3"></div>
             </div>
-        </div>
-    `;
-    document.getElementById('bookForm').onsubmit = async (e) => {
+        </div>`;
+
+    document.getElementById('bookingForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const msg = document.getElementById('formMessage');
         const data = {
-
+            idClient: currentUser.idClient || currentUser.IdClient,
+            idCoach: parseInt(document.getElementById('coachId').value),
+            idArena: parseInt(document.getElementById('arenaId').value),
             date: document.getElementById('lessonDate').value,
-            type: document.getElementById('lessonType').value,
-            clientId: parseInt(document.getElementById('clientId').value),
-            coachId: parseInt(document.getElementById('coachId').value),
-            horseId: parseInt(document.getElementById('horseId').value)
+            lessonType: document.getElementById('lessonType').value,
+            horseIds: [] // Можно добавить выбор позже
         };
-        try {
-            const response = await fetch(`${API_URL}/lessons/book`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const result = await response.json();
-            if (response.ok) {
-                msg.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
-                setTimeout(() => loadPage('schedule'), 2000);
-            } else {
-                msg.innerHTML = `<div class="alert alert-danger">${result.message || result}</div>`;
-            }
-        } catch (err) {
-            msg.innerHTML = `<div class="alert alert-danger">Ошибка сервера</div>`;
 
-        }
-    };
-}
-
-function showAuthForm(type = 'login') {
-    const container = document.getElementById('main-content');
-    if (type === 'login') {
-        container.innerHTML = `
-            <div class="card mx-auto shadow" style="max-width: 400px;">
-                <div class="card-body">
-                    <h3 class="text-center">Вход</h3>
-                    <form onsubmit="handleLogin(event)">
-                        <input type="email" id="email" class="form-control mb-2" placeholder="Email" required>
-                        <input type="password" id="password" class="form-control mb-3" placeholder="Пароль" required>
-                        <button class="btn btn-primary w-100">Войти</button>
-                    </form>
-                    <p class="mt-3 text-center">Нет аккаунта? <a href="#" onclick="showAuthForm('reg')">Регистрация</a></p>
-                </div>
-            </div>`;
-    } else {
-        container.innerHTML = `
-            <div class="card mx-auto shadow" style="max-width: 400px;">
-                <div class="card-body">
-                    <h3 class="text-center">Регистрация</h3>
-                    <form onsubmit="handleRegister(event)">
-                        <input type="text" id="regName" class="form-control mb-2" placeholder="Имя" required>
-                        <input type="text" id="regSurname" class="form-control mb-2" placeholder="Фамилия" required>
-                        <input type="email" id="regEmail" class="form-control mb-2" placeholder="Email" required>
-                        <input type="password" id="regPass" class="form-control mb-3" placeholder="Пароль" required>
-                        <button class="btn btn-success w-100">Создать аккаунт</button>
-                    </form>
-                </div>
-            </div>`;
-    }
-}
-
-async function handleLogin(e) {
-    e.preventDefault();
-    const loginVal = document.getElementById('email').value; 
-    const passVal = document.getElementById('password').value;
-
-    try {
-        const response = await fetch(`${API_URL}/auth/login`, {
+        const res = await fetch(`${API_URL}/Equestrian/lesson/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ login: loginVal, password: passVal }) 
+            body: JSON.stringify(data)
         });
 
-        if (response.ok) {
-            const user = await response.json();
-
-            localStorage.setItem('clientId', user.id);
-            localStorage.setItem('userName', user.name);
-
-            currentUser.isLoggedIn = true;
-            currentUser.clientId = user.id;
-
-            alert(`Добро пожаловать, ${user.name}!`);
-            location.reload();
-        } else {
-            const error = await response.json();
-            alert(error.message || "Ошибка входа");
-        }
-    } catch (err) {
-        alert("Сервер не отвечает.");
-    }
-}
-function logout() {
-    localStorage.clear();
-    location.reload();
+        if (res.ok) { alert('Успешно!'); loadPage('my-lessons'); }
+        else alert('Ошибка при записи');
+    });
 }
 
-function updateNav() {
-    const nav = document.querySelector('.navbar-nav');
-    if (currentUser.isLoggedIn) {
-    }
+async function loadCoachSchedule(container) {
+    try {
+        const coachId = currentUser.idCoach || 1;
+        const res = await fetch(`${API_URL}/Equestrian/coach/${coachId}/schedule`);
+        const schedule = await res.json();
+
+        container.innerHTML = `
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white"><h5>Мое расписание</h5></div>
+                <div class="card-body">
+                    ${schedule.length > 0 ? schedule.map(l => `
+                        <div class="border rounded p-3 mb-2">
+                            <strong>${new Date(l.date).toLocaleDateString()}</strong> | ${l.startTime}
+                            <br>Клиент: ${l.clientFullName} (${l.clientLevel})
+                        </div>`).join('') : '<p>Занятий нет</p>'}
+                </div>
+            </div>`;
+    } catch (e) { container.innerHTML = 'Ошибка расписания'; }
 }
-document.addEventListener('DOMContentLoaded', () => {
-    loadPage('home'); 
-});
+
+async function loadUsers(container) {
+    try {
+        const res = await fetch(`${API_URL}/Equestrian/admin/users`);
+        const users = await res.json();
+
+        container.innerHTML = `
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between">
+                    <h5 class="mb-0">Пользователи</h5>
+                    <button class="btn btn-sm btn-light" onclick="downloadUsersReport()">Отчет</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>ID</th><th>Логин</th><th>Роль</th><th>Баланс</th></tr></thead>
+                        <tbody>
+                            ${users.map(u => `
+                                <tr>
+                                    <td>${u.idUser}</td>
+                                    <td>${u.login}</td>
+                                    <td>
+                                        <select class="form-select form-select-sm" onchange="updateUserRole(${u.idUser}, this.value)">
+                                            <option value="Client" ${u.role === 'Client' ? 'selected' : ''}>Клиент</option>
+                                            <option value="Coach" ${u.role === 'Coach' ? 'selected' : ''}>Тренер</option>
+                                            <option value="Admin" ${u.role === 'Admin' ? 'selected' : ''}>Админ</option>
+                                        </select>
+                                    </td>
+                                    <td>${u.client?.balance || 0} р.</td>
+                                </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+    } catch (e) { container.innerHTML = 'Ошибка загрузки пользователей'; }
+}
+
+async function loadHorses(container) {
+    container.innerHTML = '<div class="row text-center"><p>Список лошадей загружается...</p></div>';
+    // Здесь можно добавить fetch к /Equestrian/horses
+}
+
+async function loadCompetitions(container) {
+    try {
+        const res = await fetch(`${API_URL}/Equestrian/competitions`);
+        const comps = await res.json();
+        container.innerHTML = `<h5>Соревнования</h5><div class="row">${comps.map(c => `
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6>${c.name}</h6>
+                        <p>${new Date(c.date).toLocaleDateString()} - ${c.registrationFee} р.</p>
+                        <button class="btn btn-primary btn-sm" onclick="registerForCompetition(${c.idCompetition})">Записаться</button>
+                    </div>
+                </div>
+            </div>`).join('')}</div>`;
+    } catch (e) { container.innerHTML = 'Ошибка соревнований'; }
+}
+
+async function loadReports(container) {
+    container.innerHTML = `
+        <div class="text-center">
+            <button class="btn btn-primary m-2" onclick="downloadUsersReport()">Отчет по юзерам</button>
+            <button class="btn btn-success m-2" onclick="alert('В разработке')">Финансовый отчет</button>
+        </div>`;
+}
+
+// ========== ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ ==========
+
+async function updateUserRole(userId, newRole) {
+    const res = await fetch(`${API_URL}/Equestrian/admin/user/${userId}/role`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRole)
+    });
+    if (res.ok) alert('Роль обновлена');
+}
+
+function downloadUsersReport() {
+    window.open(`${API_URL}/Equestrian/admin/users/report`);
+}
+
+function showTopUpModal() {
+    const amount = prompt('Сумма пополнения:', '1000');
+    if (amount) alert('Запрос отправлен');
+}
+
+async function loadMyLessons(container) {
+    // В данной версии просто показываем профиль или можно сделать отдельный fetch к расписанию клиента
+    await loadProfile(container);
+}

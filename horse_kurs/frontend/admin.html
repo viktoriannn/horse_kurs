@@ -1,0 +1,560 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Администратор - Конный Клуб</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: visible;
+        }
+
+        .sidebar {
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            overflow-y: visible;
+            height: auto;
+        }
+
+        .content-area {
+            overflow-y: visible;
+            height: auto;
+        }
+
+        .footer {
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 1rem 0;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+            .footer h5 {
+                font-size: 1rem;
+                font-weight: 600;
+                margin-bottom: 0.8rem;
+            }
+
+            .footer p {
+                font-size: 12px;
+                line-height: 1.4;
+            }
+
+        .footer-links {
+            list-style: none;
+            padding-left: 0;
+        }
+
+            .footer-links li {
+                margin-bottom: 5px;
+                font-size: 12px;
+            }
+
+        .divider {
+            border-color: #4a6a7a;
+            margin: 0.8rem 0;
+        }
+
+        .copyright {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .profile-label {
+            font-weight: 600;
+            color: #555;
+            margin-right: 8px;
+        }
+
+        .list-group-flush {
+            overflow: visible;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Equestrian Club</a>
+            <div class="d-flex align-items-center">
+                <span class="me-3 text-white" id="userName"></span>
+                <button class="btn btn-outline-light btn-sm" id="logoutBtn">Выйти</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Боковое меню -->
+            <div class="col-md-2 bg-light p-0 sidebar">
+                <div class="list-group list-group-flush">
+                    <a href="#" class="list-group-item list-group-item-action" data-page="users">Пользователи</a>
+                    <a href="#" class="list-group-item list-group-item-action" data-page="addEmployee">Добавить сотрудника</a>
+                    <a href="#" class="list-group-item list-group-item-action" data-page="addClient">Добавить клиента</a>
+                    <a href="#" class="list-group-item list-group-item-action" data-page="addHorse">Добавить лошадь</a>
+                    <a href="#" class="list-group-item list-group-item-action" data-page="reports">Отчеты</a>
+                </div>
+            </div>
+
+            <!-- Основной контент -->
+            <div class="col-md-10 p-4">
+                <div id="content"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-2 mb-md-0">
+                    <h5>Equestrian Club</h5>
+                    <p class="small">Профессиональный конный клуб. Обучение верховой езде и подготовка к соревнованиям.</p>
+                </div>
+                <div class="col-md-4 mb-2 mb-md-0">
+                    <h5>Контакты</h5>
+                    <ul class="footer-links">
+                        <li>г. Москва, ул. Конная, д. 1</li>
+                        <li>+7 (999) 123-45-67</li>
+                        <li>info@equestrian-club.ru</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h5>Часы работы</h5>
+                    <ul class="footer-links">
+                        <li>Пн-Пт: 9:00 - 21:00</li>
+                        <li>Сб-Вс: 10:00 - 18:00</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="divider">
+            <div class="copyright text-center">
+                <p class="mb-0">&copy; 2024 Конный клуб "Equestrian". Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let currentPage = 'users';
+
+        async function init() {
+            if (!checkRole(['Admin'])) return;
+            const user = getCurrentUser();
+            document.getElementById('userName').innerHTML = `${user.login} (Админ)`;
+
+            document.querySelectorAll('[data-page]').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const page = item.getAttribute('data-page');
+                    loadPage(page);
+                    document.querySelectorAll('[data-page]').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                });
+            });
+
+            document.getElementById('logoutBtn').addEventListener('click', () => logout());
+            loadPage('users');
+        }
+
+        async function loadPage(page) {
+            currentPage = page;
+            const content = document.getElementById('content');
+            showLoader(content);
+
+            try {
+                if (page === 'users') {
+                    await loadUsers(content);
+                } else if (page === 'addEmployee') {
+                    await showAddEmployeeForm(content);
+                } else if (page === 'addClient') {
+                    await showAddClientForm(content);
+                } else if (page === 'addHorse') {
+                    await showAddHorseForm(content);
+                } else if (page === 'reports') {
+                    await loadReports(content);
+                }
+            } catch (error) {
+                content.innerHTML = `<div class="alert alert-danger">Ошибка: ${error.message}</div>`;
+            }
+        }
+
+        async function loadUsers(container) {
+            try {
+                const users = await AdminAPI.getUsers();
+
+                if (!users || users.length === 0) {
+                    container.innerHTML = '<div class="alert alert-info">Нет пользователей</div>';
+                    return;
+                }
+
+                let html = `
+                        <div class="card">
+                            <div class="card-header">Пользователи системы</div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Логин</th>
+                                                <th>Роль</th>
+                                                <th>ФИО</th>
+                                                <th>Телефон</th>
+                                                <th>Баланс</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                    `;
+
+                for (const user of users) {
+                    html += `
+                            <tr>
+                                <td>${user.idUser || '—'}</td>
+                                <td><strong>${user.login || '—'}</strong></td>
+                                <td>
+                                    <select class="form-select form-select-sm role-select" style="width: 110px" data-userid="${user.idUser}">
+                                        <option value="Client" ${user.role === 'Client' ? 'selected' : ''}>Клиент</option>
+                                        <option value="Coach" ${user.role === 'Coach' ? 'selected' : ''}>Тренер</option>
+                                        <option value="Admin" ${user.role === 'Admin' ? 'selected' : ''}>Админ</option>
+                                    </select>
+                                </td>
+                                <td>${user.client ? (user.client.surname || '') + ' ' + (user.client.name || '') : '-'}</td>
+                                <td>${user.client ? (user.client.phone || '-') : '-'}</td>
+                                <td>${user.client ? formatCurrency(user.client.balance || 0) : '-'}</td>
+                            </tr>
+                        `;
+                }
+
+                html += `</tbody><tr></div></div></div>`;
+                container.innerHTML = html;
+
+                document.querySelectorAll('.role-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const userId = select.getAttribute('data-userid');
+                        const newRole = select.value;
+                        try {
+                            await AdminAPI.updateUserRole(userId, newRole);
+                            showNotification('Роль пользователя обновлена');
+                        } catch (error) {
+                            showNotification('Ошибка при обновлении роли', 'danger');
+                        }
+                    });
+                });
+
+            } catch (error) {
+                container.innerHTML = `<div class="alert alert-danger">Ошибка загрузки пользователей: ${error.message}</div>`;
+            }
+        }
+
+        async function showAddEmployeeForm(container) {
+            container.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">Добавить сотрудника</div>
+                        <div class="card-body">
+                            <form id="addEmployeeForm">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Фамилия</label>
+                                        <input type="text" id="surname" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Имя</label>
+                                        <input type="text" id="name" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Отчество</label>
+                                        <input type="text" id="patronymic" class="form-control">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Дата рождения</label>
+                                        <input type="date" id="dateOfBirth" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Должность</label>
+                                        <select id="post" class="form-select" required>
+                                            <option value="Конюх">Конюх</option>
+                                            <option value="Ветеринар">Ветеринар</option>
+                                            <option value="Администратор">Администратор</option>
+                                            <option value="Уборщик">Уборщик</option>
+                                            <option value="Менеджер">Менеджер</option>
+                                            <option value="Тренер">Тренер</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Телефон</label>
+                                        <input type="text" id="phone" class="form-control">
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Город</label>
+                                        <input type="text" id="city" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Улица</label>
+                                        <input type="text" id="street" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Дом</label>
+                                        <input type="text" id="houseNumber" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Квартира</label>
+                                        <input type="text" id="flatNumber" class="form-control">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Добавить сотрудника</button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+
+            document.getElementById('addEmployeeForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const data = {
+                    surname: document.getElementById('surname').value,
+                    name: document.getElementById('name').value,
+                    patronymic: document.getElementById('patronymic').value,
+                    dateOfBirth: document.getElementById('dateOfBirth').value,
+                    post: document.getElementById('post').value,
+                    phone: document.getElementById('phone').value,
+                    city: document.getElementById('city').value,
+                    street: document.getElementById('street').value,
+                    houseNumber: document.getElementById('houseNumber').value,
+                    flatNumber: document.getElementById('flatNumber').value
+                };
+
+                try {
+                    await AdminAPI.createEmployee(data);
+                    showNotification('Сотрудник добавлен успешно!');
+                    document.getElementById('addEmployeeForm').reset();
+                } catch (error) {
+                    showNotification('Ошибка при добавлении сотрудника', 'danger');
+                }
+            });
+        }
+
+        async function showAddClientForm(container) {
+            container.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">Добавить клиента</div>
+                        <div class="card-body">
+                            <form id="addClientForm">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Фамилия</label>
+                                        <input type="text" id="surname" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Имя</label>
+                                        <input type="text" id="name" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Отчество</label>
+                                        <input type="text" id="patronymic" class="form-control">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Дата рождения</label>
+                                        <input type="date" id="dateOfBirth" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Телефон</label>
+                                        <input type="text" id="phone" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Уровень подготовки</label>
+                                        <select id="levelOfTraining" class="form-select">
+                                            <option value="Новичок">Новичок</option>
+                                            <option value="Любитель">Любитель</option>
+                                            <option value="Спортсмен">Спортсмен</option>
+                                            <option value="Профессионал">Профессионал</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Паспорт</label>
+                                        <input type="text" id="passport" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Город</label>
+                                        <input type="text" id="city" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Улица</label>
+                                        <input type="text" id="street" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Дом</label>
+                                        <input type="text" id="house" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Квартира</label>
+                                        <input type="text" id="flat" class="form-control">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Логин для входа</label>
+                                        <input type="text" id="login" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Пароль</label>
+                                        <input type="password" id="password" class="form-control" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Добавить клиента</button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+
+            document.getElementById('addClientForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const data = {
+                    surname: document.getElementById('surname').value,
+                    name: document.getElementById('name').value,
+                    patronymic: document.getElementById('patronymic').value,
+                    dateOfBirth: document.getElementById('dateOfBirth').value,
+                    phone: document.getElementById('phone').value,
+                    levelOfTraining: document.getElementById('levelOfTraining').value,
+                    passport: document.getElementById('passport').value,
+                    city: document.getElementById('city').value,
+                    street: document.getElementById('street').value,
+                    house: document.getElementById('house').value,
+                    flat: document.getElementById('flat').value,
+                    login: document.getElementById('login').value,
+                    password: document.getElementById('password').value
+                };
+
+                try {
+                    await AdminAPI.createClient(data);
+                    showNotification('Клиент добавлен успешно!');
+                    document.getElementById('addClientForm').reset();
+                } catch (error) {
+                    showNotification('Ошибка при добавлении клиента', 'danger');
+                }
+            });
+        }
+
+        async function showAddHorseForm(container) {
+            container.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">Добавить лошадь</div>
+                        <div class="card-body">
+                            <form id="addHorseForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Кличка</label>
+                                        <input type="text" id="name" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Пол</label>
+                                        <select id="gender" class="form-select" required>
+                                            <option value="Жеребец">Жеребец</option>
+                                            <option value="Кобыла">Кобыла</option>
+                                            <option value="Мерин">Мерин</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Порода</label>
+                                        <input type="text" id="breed" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Дата рождения</label>
+                                        <input type="date" id="dateOfBirth" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Состояние здоровья</label>
+                                        <select id="stateOfHealth" class="form-select">
+                                            <option value="Здорова">Здорова</option>
+                                            <option value="Больна">Больна</option>
+                                            <option value="Травмирована">Травмирована</option>
+                                            <option value="Восстанавливается">Восстанавливается</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Уровень подготовки</label>
+                                        <select id="levelOfTraining" class="form-select">
+                                            <option value="Начинающий">Начинающий</option>
+                                            <option value="Продвинутый">Продвинутый</option>
+                                            <option value="Спортивный">Спортивный</option>
+                                            <option value="Профессиональный">Профессиональный</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Паспорт</label>
+                                        <input type="text" id="passport" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Статус</label>
+                                        <select id="status" class="form-select">
+                                            <option value="В работе">В работе</option>
+                                            <option value="На отдыхе">На отдыхе</option>
+                                            <option value="На лечении">На лечении</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">ID Денника (необязательно)</label>
+                                        <input type="number" id="idStall" class="form-control">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Добавить лошадь</button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+
+            document.getElementById('addHorseForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const data = {
+                    name: document.getElementById('name').value,
+                    gender: document.getElementById('gender').value,
+                    breed: document.getElementById('breed').value,
+                    dateOfBirth: document.getElementById('dateOfBirth').value,
+                    stateOfHealth: document.getElementById('stateOfHealth').value,
+                    levelOfTraining: document.getElementById('levelOfTraining').value,
+                    passport: document.getElementById('passport').value,
+                    status: document.getElementById('status').value,
+                    idStall: document.getElementById('idStall').value || null
+                };
+
+                try {
+                    await AdminAPI.createHorse(data);
+                    showNotification('Лошадь добавлена успешно!');
+                    document.getElementById('addHorseForm').reset();
+                } catch (error) {
+                    showNotification('Ошибка при добавлении лошади', 'danger');
+                }
+            });
+        }
+
+        async function loadReports(container) {
+            container.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">Экспорт данных</div>
+                        <div class="card-body text-center py-5">
+                            <button class="btn btn-primary btn-lg" id="exportExcelBtn">Экспорт в Excel</button>
+                            <p class="text-muted mt-3">Экспорт всех пользователей, клиентов и сотрудников в Excel</p>
+                        </div>
+                    </div>
+                `;
+
+            document.getElementById('exportExcelBtn')?.addEventListener('click', () => {
+                window.open('http://localhost:28280/api/Equestrian/admin/export/full', '_blank');
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -22,6 +22,50 @@ namespace horse_kurs.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("horse_kurs.Models.AppUser", b =>
+                {
+                    b.Property<int>("IdUser")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdUser");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdUser"));
+
+                    b.Property<int?>("IdClient")
+                        .HasColumnType("int")
+                        .HasColumnName("IdClient");
+
+                    b.Property<int?>("IdCoach")
+                        .HasColumnType("int")
+                        .HasColumnName("IdCoach");
+
+                    b.Property<string>("Login")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Login");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Password");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Role");
+
+                    b.HasKey("IdUser");
+
+                    b.HasIndex("IdClient");
+
+                    b.HasIndex("IdCoach");
+
+                    b.ToTable("AppUsers", (string)null);
+                });
+
             modelBuilder.Entity("horse_kurs.Models.Arena", b =>
                 {
                     b.Property<int>("IdArena")
@@ -719,37 +763,20 @@ namespace horse_kurs.Migrations
                     b.ToTable("Stall", (string)null);
                 });
 
-            modelBuilder.Entity("horse_kurs.Models.Users", b =>
+            modelBuilder.Entity("horse_kurs.Models.AppUser", b =>
                 {
-                    b.Property<int>("IdUser")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                    b.HasOne("horse_kurs.Models.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("IdClient")
+                        .HasConstraintName("FK_AppUsers_Client");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdUser"));
+                    b.HasOne("horse_kurs.Models.Coach", "Coach")
+                        .WithMany()
+                        .HasForeignKey("IdCoach");
 
-                    b.Property<int?>("ClientIdClient")
-                        .HasColumnType("int");
+                    b.Navigation("Client");
 
-                    b.Property<int?>("IdClient")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Login")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("IdUser");
-
-                    b.HasIndex("ClientIdClient");
-
-                    b.ToTable("Users");
+                    b.Navigation("Coach");
                 });
 
             modelBuilder.Entity("horse_kurs.Models.Coach", b =>
@@ -942,15 +969,6 @@ namespace horse_kurs.Migrations
                         .HasConstraintName("FK_Stall_Employee");
 
                     b.Navigation("IdEmployeeNavigation");
-                });
-
-            modelBuilder.Entity("horse_kurs.Models.Users", b =>
-                {
-                    b.HasOne("horse_kurs.Models.Client", "Client")
-                        .WithMany()
-                        .HasForeignKey("ClientIdClient");
-
-                    b.Navigation("Client");
                 });
 
             modelBuilder.Entity("horse_kurs.Models.Arena", b =>

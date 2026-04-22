@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
 
 namespace horse_kurs.Models;
 
@@ -16,7 +16,6 @@ public partial class EquestrianClubContext : DbContext
     }
 
     public virtual DbSet<Arena> Arenas { get; set; }
-    public virtual DbSet<Users> Users { get; set; }
     public virtual DbSet<Client> Clients { get; set; }
 
     public virtual DbSet<Coach> Coaches { get; set; }
@@ -42,14 +41,7 @@ public partial class EquestrianClubContext : DbContext
     public virtual DbSet<ScheduleArena> ScheduleArenas { get; set; }
 
     public virtual DbSet<Stall> Stalls { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            // 
-        }
-    }
+    public DbSet<AppUser> AppUsers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -413,6 +405,22 @@ public partial class EquestrianClubContext : DbContext
             entity.HasOne(d => d.IdEmployeeNavigation).WithMany(p => p.Stalls)
                 .HasForeignKey(d => d.IdEmployee)
                 .HasConstraintName("FK_Stall_Employee");
+        });
+        modelBuilder.Entity<AppUser>(entity =>
+        {
+            entity.ToTable("AppUsers");
+            entity.HasKey(e => e.IdUser);
+            entity.Property(e => e.IdUser).HasColumnName("IdUser");
+            entity.Property(e => e.Login).HasMaxLength(50);
+            entity.Property(e => e.Password).HasMaxLength(100);
+            entity.Property(e => e.Role).HasMaxLength(20);
+            entity.Property(e => e.IdClient).HasColumnName("IdClient");
+            entity.Property(e => e.IdCoach).HasColumnName("IdCoach");
+
+            entity.HasOne(e => e.Client)
+                  .WithMany()
+                  .HasForeignKey(e => e.IdClient)
+                  .HasConstraintName("FK_AppUsers_Client");
         });
 
         OnModelCreatingPartial(modelBuilder);
